@@ -79,6 +79,19 @@ To remove someone, set `active` to `false` (keeps their notes and history). Inac
 **Automatic assignment:** a new lead goes to the active person whose `areas` include its department.
 Business Office leads use the area picked in the form; Giza leads use `giza`; quick-form leads use `quick`.
 
+Current team (one person per department):
+
+| Department | Person in the CRM |
+| --- | --- |
+| `giza`, `planificacion-financiera` | Irene |
+| `tecnologia` | Tecnología |
+| `telecomunicaciones` | Suministros |
+| `marketing` | Marketing |
+| `consulta`, `quick` | nobody: they stay "Sin asignar" and are handled by WhatsApp |
+
+**Pending:** consulta and quick-form leads should also be sent to PCA's WhatsApp Business number
+(number not chosen yet — to be added later).
+
 ## Supabase settings to check (once)
 
 - **Authentication → Sign In / Providers → "Allow new users to sign up": OFF.** Only invited people get in.
