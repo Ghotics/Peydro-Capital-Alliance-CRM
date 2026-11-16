@@ -11,8 +11,10 @@ and is not linked from it. Spanish only.
 | --- | --- | --- |
 | Owner (`role = 'owner'`) | every lead | everything, deletes leads, manages the team |
 | Specialist | leads of their department(s) + leads assigned to them | those leads and their notes |
-| Logged in, but not in `team_members` (or `active = false`) | nothing | nothing |
-| Visitor (not logged in) | nothing | nothing |
+| Invited, but not added to `team_members` yet (or `active = false`) | nothing | nothing |
+
+Only owners and specialists can log in. Anyone else who opens the address only sees the login screen.
+Leads from the website forms don't go through the CRM: the website saves them with a server function.
 
 A specialist's departments are the `areas` column of `team_members`
 (`giza`, `planificacion-financiera`, `tecnologia`, `telecomunicaciones`, `marketing`, `consulta`, `quick`).
