@@ -33,7 +33,8 @@ export default function Login({ linkError }: Props) {
     setBusy(true);
     setError(null);
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/`,
+      /* Back to the CRM's own address, also when it lives in a folder (GitHub Pages). */
+      redirectTo: new URL(import.meta.env.BASE_URL, window.location.origin).href,
     });
     setBusy(false);
     if (err) {

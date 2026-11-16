@@ -60,14 +60,18 @@ To remove someone, set `active` to `false` (keeps their notes and history).
 ## Supabase settings to check (once)
 
 - **Authentication → Sign In / Providers → "Allow new users to sign up": OFF.** Only invited people get in.
-- **Authentication → URL Configuration:** add the CRM address (e.g. `https://crm.your-domain.com`) and
-  `http://localhost:5174` to **Redirect URLs**. Invite and password emails send people back there.
+- **Authentication → URL Configuration:**
+  - **Site URL:** the CRM address (now `https://ghotics.github.io/Peydro-Capital-Alliance-CRM/`).
+    Invites sent from the dashboard take people there.
+  - **Redirect URLs:** the same address, plus `http://localhost:5174` for working on your computer.
 
 ## Put it online
 
-Any static host works (Netlify, Vercel, Cloudflare Pages):
+**Now: GitHub Pages.** `.github/workflows/deploy.yml` builds the app and publishes it on every push to `main`.
+Needed once: repo **Settings → Pages → Source: GitHub Actions**.
+Address: `https://ghotics.github.io/Peydro-Capital-Alliance-CRM/`
 
-- Build command `npm run build`, output folder `dist`
-- Environment variables: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (same as `.env.example`)
-- Use a subdomain such as `crm.<pca-domain>`. Pages use `#/…` addresses, so no redirect rules are needed.
-- The app tells search engines not to index it (`robots.txt` + `noindex`).
+**Later: own subdomain** (e.g. `crm.<pca-domain>`): in the workflow set `BASE_PATH: /`, add the domain in
+Settings → Pages → Custom domain, and update the Supabase URLs above.
+
+Pages use `#/…` addresses, so no redirect rules are needed on any host. The app asks search engines not to index it.
