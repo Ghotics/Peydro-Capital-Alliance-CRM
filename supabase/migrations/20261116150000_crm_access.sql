@@ -1,12 +1,13 @@
 -- PCA CRM: who can see what.
--- NOT APPLIED YET. Waiting for approval before running it on the Supabase project.
+-- Applied to the Supabase project on 2026-11-16.
 --
 -- Rules in short:
+--   * Only owners and specialists log in (invite only, no sign-up).
 --   * Owners see and change everything.
 --   * Specialists see only:
 --       - leads of their own department(s) (team_members.areas), and
 --       - leads assigned to them (leads.owner_id).
---   * Visitors (anon) can't read or write any table. The website forms will save leads
+--   * Without a login (anon key) no table can be read or written. The website forms will save leads
 --     through the `submit-lead` Edge Function, which uses the server key and skips these rules.
 --   * Someone who logs in but has no active row in team_members sees nothing.
 

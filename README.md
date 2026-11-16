@@ -44,7 +44,8 @@ Later: analytics page (QR scans per campaign), managing campaigns and the team f
 
 Changes live in `supabase/migrations/`. Each file is applied once, in order.
 
-- `20261116150000_crm_access.sql` — adds `leads.department`, the `lead_notes` table and all the access rules.
+- `20261116150000_crm_access.sql` — adds `leads.department`, the `lead_notes` table and all the access rules. Applied.
+- `20261116152500_crm_access_tidy.sql` — small speed clean-up of the rules above (same access). Applied.
 
 ## Add someone to the team
 
