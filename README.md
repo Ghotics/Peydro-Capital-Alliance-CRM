@@ -63,7 +63,7 @@ To remove someone, set `active` to `false` (keeps their notes and history).
 - **Authentication → URL Configuration:**
   - **Site URL:** the CRM address (now `https://ghotics.github.io/Peydro-Capital-Alliance-CRM/`).
     Invites sent from the dashboard take people there.
-  - **Redirect URLs:** the same address, plus `http://localhost:5174` for working on your computer.
+  - **Redirect URLs:** the same address. (Only add `http://localhost:5174` if you ever run the CRM on your computer.)
 
 ## Put it online
 
