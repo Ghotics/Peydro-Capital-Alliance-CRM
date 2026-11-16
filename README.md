@@ -51,6 +51,8 @@ Changes live in `supabase/migrations/`. Each file is applied once, in order.
 - `20261116150000_crm_access.sql` — adds `leads.department`, the `lead_notes` table and all the access rules. Applied.
 - `20261116152500_crm_access_tidy.sql` — small speed clean-up of the rules above (same access). Applied.
 - `20261116180000_campaign_stats.sql` — totals per campaign (leads, scans) counted in the database. Applied.
+- `20261116190000_auto_assign_leads.sql` — new leads are assigned automatically to the specialist of their department
+  (fewest open leads first when several share it; "Sin asignar" when nobody has it). Applied after review.
 
 ## Website → database (`supabase/functions/website-intake`)
 
@@ -72,7 +74,10 @@ The public website never writes to the tables itself. It calls this Supabase fun
    - `id`: the user's id (copy it from Authentication → Users)
    - `name`, `role` (`owner` or `specialist`), `areas` (e.g. `{tecnologia}`)
 
-To remove someone, set `active` to `false` (keeps their notes and history).
+To remove someone, set `active` to `false` (keeps their notes and history). Inactive people stop getting new leads.
+
+**Automatic assignment:** a new lead goes to the active person whose `areas` include its department.
+Business Office leads use the area picked in the form; Giza leads use `giza`; quick-form leads use `quick`.
 
 ## Supabase settings to check (once)
 
