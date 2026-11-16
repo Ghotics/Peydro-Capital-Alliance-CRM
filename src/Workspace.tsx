@@ -2,10 +2,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import { errorMessage, roleLabel } from './lib/labels';
-import { useRoute } from './lib/router';
+import { go, href, useRoute } from './lib/router';
+import { navFor } from './nav';
 import type { TeamMember } from './lib/types';
 import LeadsList, { emptyFilters, type Filters } from './pages/LeadsList';
 import LeadDetail from './pages/LeadDetail';
+import Campaigns from './pages/Campaigns';
+import CampaignDetail from './pages/CampaignDetail';
+import CampaignNew from './pages/CampaignNew';
 
 interface Props {
   userId: string;
@@ -44,6 +48,12 @@ export default function Workspace({ userId, email }: Props) {
 
   const signOut = () => supabase.auth.signOut();
 
+  /** From a campaign page: open the leads list showing only that campaign's leads. */
+  const showCampaignLeads = (code: string) => {
+    setFilters({ ...emptyFilters, campaign: code });
+    go(href.leads);
+  };
+
   if (error) {
     return (
       <div className="center-screen">
@@ -78,24 +88,38 @@ export default function Workspace({ userId, email }: Props) {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <a href="#/" className="brand">
+      <aside className="sidebar">
+        <a href={href.campaigns} className="brand">
           <span className="brand-mark">PCA</span> CRM
         </a>
-        <div className="topbar-user">
-          <span>
-            {me.name} <span className="muted">· {roleLabel(me.role)}</span>
-          </span>
+        <nav className="side-nav">
+          {navFor(me).map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`side-link ${item.routes.includes(route.name) ? 'active' : ''}`}
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div className="side-user">
+          <div>
+            <div className="side-user-name">{me.name}</div>
+            <div className="muted small">{roleLabel(me.role)}</div>
+          </div>
           <button className="btn ghost small" onClick={signOut}>
             Cerrar sesión
           </button>
         </div>
-      </header>
+      </aside>
       <main className="page">
-        {route.name === 'lead' ? (
-          <LeadDetail key={route.id} id={route.id} me={me} team={team} />
-        ) : (
-          <LeadsList me={me} team={team} filters={filters} setFilters={setFilters} />
+        {route.name === 'lead' && <LeadDetail key={route.id} id={route.id} me={me} team={team} />}
+        {route.name === 'leads' && <LeadsList me={me} team={team} filters={filters} setFilters={setFilters} />}
+        {route.name === 'campaigns' && <Campaigns me={me} />}
+        {route.name === 'campaign-new' && <CampaignNew me={me} />}
+        {route.name === 'campaign' && (
+          <CampaignDetail key={route.id} id={route.id} me={me} onShowLeads={showCampaignLeads} />
         )}
       </main>
     </div>

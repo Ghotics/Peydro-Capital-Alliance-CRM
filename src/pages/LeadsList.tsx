@@ -63,8 +63,10 @@ export default function LeadsList({ me, team, filters, setFilters }: Props) {
   const campaigns = useMemo(() => {
     const map = new Map<string, string>();
     (leads ?? []).forEach((l) => l.campaign && map.set(l.campaign.code, l.campaign.name));
+    /* Coming from a campaign page: keep that campaign in the list even if it has no leads you can see. */
+    if (filters.campaign && filters.campaign !== '-' && !map.has(filters.campaign)) map.set(filters.campaign, filters.campaign);
     return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], 'es'));
-  }, [leads]);
+  }, [leads, filters.campaign]);
 
   /* Every filter except the stage: used for the stage counters. */
   const beforeStage = useMemo(() => {

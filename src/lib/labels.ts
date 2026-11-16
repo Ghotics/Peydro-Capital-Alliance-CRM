@@ -39,6 +39,20 @@ export const FORMS: Record<FormKind, string> = {
   quick: 'Formulario rápido (enlace)',
 };
 
+/** Short names for the campaign type picker and lists. */
+export const FORM_SHORT: Record<FormKind, string> = {
+  business_office: 'Business Office',
+  giza: 'Giza',
+  quick: 'Formulario rápido',
+};
+
+/** What each campaign type is for, shown when creating one. */
+export const FORM_HELP: Record<FormKind, string> = {
+  business_office: 'QR en edificios: abre la página de asesoramiento, donde eligen departamento.',
+  giza: 'Abre el formulario Giza de la web.',
+  quick: 'Enlaces en anuncios o redes: abre el formulario corto.',
+};
+
 export const INTERESTS: Record<string, string> = {
   seguros: 'Seguros',
   ahorro_inversion: 'Ahorro e inversión',
@@ -80,5 +94,8 @@ export function errorMessage(error: { message?: string } | null | undefined): st
   if (/password should be at least/i.test(msg)) return 'La contraseña es demasiado corta.';
   if (/same.*password|different from the old/i.test(msg)) return 'La nueva contraseña debe ser distinta de la anterior.';
   if (/rate limit|too many/i.test(msg)) return 'Demasiados intentos. Espera unos minutos.';
+  if (/campaigns_code_key|duplicate key.*code/i.test(msg)) return 'Ya existe una campaña con ese código. Elige otro.';
+  if (/leads_campaign_id_fkey|violates foreign key/i.test(msg))
+    return 'No se puede borrar: tiene leads. Desactívala en su lugar.';
   return msg ? `Ha ocurrido un error: ${msg}` : 'Ha ocurrido un error.';
 }

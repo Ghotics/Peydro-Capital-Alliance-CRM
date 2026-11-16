@@ -55,6 +55,23 @@ export interface Lead extends Omit<LeadRow, 'campaign'> {
   building: { name: string; partner: { name: string } | null } | null;
 }
 
+export interface Building {
+  id: string;
+  name: string;
+  partner: { name: string } | null;
+}
+
+export interface Campaign {
+  id: string;
+  code: string;
+  form: FormKind;
+  name: string;
+  active: boolean;
+  created_at: string;
+  building_id: string | null;
+  building: Building | null;
+}
+
 export interface Note {
   id: string;
   lead_id: string;

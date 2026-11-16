@@ -33,6 +33,8 @@ jobs:
           # Public values (same as .env.example). Can be overridden with repo variables.
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://vocranrdldtamdcoulzi.supabase.co' }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_sWT2NL1ft8aDYYfOC19hrg_iyh8F6EE' }}
+          # The public website the QR codes point to. Change when the website gets its own domain.
+          VITE_WEBSITE_URL: ${{ vars.VITE_WEBSITE_URL || 'https://ghotics.github.io/Peydro-Capital-Alliance' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

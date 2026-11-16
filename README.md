@@ -31,14 +31,18 @@ npm run dev          # opens on http://localhost:5174
 
 `npm run build` makes the `dist/` folder to put online.
 
-## What's in it (first version)
+## What's in it
 
 - Login with email + password, "forgot password", and a "create your password" screen for invites.
+- **Side menu** (`src/nav.ts`): add a line there to add a section.
+- **Campañas** (landing page): every campaign with its results. Each one has a **QR code** (download PNG / SVG,
+  copy link) that opens the right website form with `?c=<code>`. Owners create, edit, switch off and delete
+  (only without leads) campaigns. The website address the QR codes use is `VITE_WEBSITE_URL`.
 - **Leads:** list with counters per stage, search, and filters by department, campaign and person.
 - **Lead page:** contact buttons (email, call, WhatsApp), where it came from (form, campaign, building, utm),
   stage, person in charge, meeting date, value, reason when lost, and notes.
 
-Later: analytics page (QR scans per campaign), managing campaigns and the team from the app.
+Later: QR scan counts (once the website records them), managing buildings and the team from the app.
 
 ## Database
 

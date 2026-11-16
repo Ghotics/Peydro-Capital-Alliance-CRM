@@ -11,7 +11,7 @@ import {
   formatDateTime,
   roleLabel,
 } from '../lib/labels';
-import { go } from '../lib/router';
+import { go, href } from '../lib/router';
 import type { Lead, Note, Stage, TeamMember } from '../lib/types';
 
 interface Props {
@@ -113,7 +113,7 @@ export default function LeadDetail({ id, me, team }: Props) {
       <div className="card narrow stack">
         <h1>Lead no encontrado</h1>
         <p className="muted">No existe o no tienes acceso a él.</p>
-        <a href="#/" className="btn">
+        <a href={href.leads} className="btn">
           Volver a leads
         </a>
       </div>
@@ -155,7 +155,7 @@ export default function LeadDetail({ id, me, team }: Props) {
     }
     if (!data) {
       /* Saved, but the lead is no longer yours to see (e.g. you assigned it to someone else outside your department). */
-      go('/');
+      go(href.leads);
       return;
     }
     const updated = data as unknown as Lead;
@@ -196,14 +196,14 @@ export default function LeadDetail({ id, me, team }: Props) {
     if (!window.confirm(`¿Eliminar el lead de ${lead.first_name} ${lead.last_name}? No se puede deshacer.`)) return;
     const { error: err } = await supabase.from('leads').delete().eq('id', lead.id);
     if (err) setError(errorMessage(err));
-    else go('/');
+    else go(href.leads);
   }
 
   const utm = Object.entries(lead.utm ?? {});
 
   return (
     <section className="stack">
-      <a href="#/" className="back">
+      <a href={href.leads} className="back">
         ← Volver a leads
       </a>
 
