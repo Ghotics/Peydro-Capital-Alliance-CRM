@@ -6,7 +6,7 @@ import { go, href } from '../lib/router';
 import { qrPng, qrSvg, download } from '../lib/qr';
 import { WEBSITE_URL, campaignUrl } from '../lib/site';
 import type { Building, Campaign, Stage, TeamMember } from '../lib/types';
-import { CAMPAIGN_SELECT, addToStats, buildingLabel, emptyStats } from './Campaigns';
+import { CAMPAIGN_SELECT, addToStats, buildingLabel, conversion, emptyStats, type ScanRow } from './Campaigns';
 
 interface Props {
   id: string;
@@ -26,6 +26,7 @@ export default function CampaignDetail({ id, me, onShowLeads }: Props) {
   const [campaign, setCampaign] = useState<Campaign | null | undefined>(undefined);
   const [leads, setLeads] = useState<{ stage: Stage; deal_value_eur: number | null }[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
+  const [scans, setScans] = useState<ScanRow | null>(null);
   const [png, setPng] = useState<string | null>(null);
   const [svg, setSvg] = useState<string | null>(null);
   const [form, setForm] = useState<Editable | null>(null);
@@ -42,9 +43,10 @@ export default function CampaignDetail({ id, me, onShowLeads }: Props) {
       supabase.from('campaigns').select(CAMPAIGN_SELECT).eq('id', id).maybeSingle(),
       supabase.from('leads').select('stage, deal_value_eur').eq('campaign_id', id),
       supabase.from('buildings').select('id, name, partner:partners(name)').order('name'),
-    ]).then(([c, l, b]) => {
+      supabase.from('campaign_scan_stats').select('campaign_id, total, last_7_days').eq('campaign_id', id).maybeSingle(),
+    ]).then(([c, l, b, s]) => {
       if (!alive) return;
-      const err = c.error ?? l.error ?? b.error;
+      const err = c.error ?? l.error ?? b.error ?? s.error;
       if (err) {
         setError(errorMessage(err));
         return;
@@ -54,6 +56,7 @@ export default function CampaignDetail({ id, me, onShowLeads }: Props) {
       if (row) setForm(fromCampaign(row));
       setLeads((l.data ?? []) as typeof leads);
       setBuildings((b.data ?? []) as unknown as Building[]);
+      setScans((s.data as ScanRow | null) ?? null);
     });
     return () => {
       alive = false;
@@ -213,10 +216,22 @@ export default function CampaignDetail({ id, me, onShowLeads }: Props) {
               </button>
             </div>
             <div className="kpis small-kpis">
+              {isOwner && (
+                <div className="kpi">
+                  <span className="kpi-value">{scans?.total ?? 0}</span>
+                  <span className="kpi-label">Escaneos · {scans?.last_7_days ?? 0} esta semana</span>
+                </div>
+              )}
               <div className="kpi">
                 <span className="kpi-value">{stats.total}</span>
                 <span className="kpi-label">Leads</span>
               </div>
+              {isOwner && (
+                <div className="kpi">
+                  <span className="kpi-value">{conversion(stats.total, scans?.total ?? 0)}</span>
+                  <span className="kpi-label">Conversión</span>
+                </div>
+              )}
               <div className="kpi">
                 <span className="kpi-value">{stats.open}</span>
                 <span className="kpi-label">En curso</span>

@@ -34,6 +34,28 @@ export function addToStats(s: CampaignStats, stage: Stage, value: number | null)
   }
 }
 
+/** One line of the campaign_lead_stats view (totals counted in the database). */
+interface StatsRow {
+  campaign_id: string;
+  total: number;
+  open: number;
+  won: number;
+  won_value: number | string;
+}
+
+/** One line of the campaign_scan_stats view (owners only). */
+export interface ScanRow {
+  campaign_id: string;
+  total: number;
+  last_7_days: number;
+}
+
+/** "12 %" — leads per scan. Empty when there are no scans yet. */
+export function conversion(leads: number, scans: number): string {
+  if (!scans) return '—';
+  return `${Math.round((leads / scans) * 100)} %`;
+}
+
 export function buildingLabel(c: Pick<Campaign, 'building'>): string | null {
   if (!c.building) return null;
   return [c.building.partner?.name, `Edificio ${c.building.name}`].filter(Boolean).join(' · ');
@@ -41,7 +63,8 @@ export function buildingLabel(c: Pick<Campaign, 'building'>): string | null {
 
 export default function Campaigns({ me }: Props) {
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
-  const [leads, setLeads] = useState<{ campaign_id: string | null; stage: Stage; deal_value_eur: number | null }[]>([]);
+  const [leadStats, setLeadStats] = useState<StatsRow[]>([]);
+  const [scanStats, setScanStats] = useState<ScanRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
@@ -49,30 +72,34 @@ export default function Campaigns({ me }: Props) {
     let alive = true;
     Promise.all([
       supabase.from('campaigns').select(CAMPAIGN_SELECT).order('created_at', { ascending: false }),
-      supabase.from('leads').select('campaign_id, stage, deal_value_eur'),
-    ]).then(([c, l]) => {
+      supabase.from('campaign_lead_stats').select('campaign_id, total, open, won, won_value'),
+      /* Only owners can see scans; for specialists this simply comes back empty. */
+      supabase.from('campaign_scan_stats').select('campaign_id, total, last_7_days'),
+    ]).then(([c, l, s]) => {
       if (!alive) return;
-      if (c.error || l.error) {
-        setError(errorMessage(c.error ?? l.error));
+      const err = c.error ?? l.error ?? s.error;
+      if (err) {
+        setError(errorMessage(err));
         return;
       }
       setCampaigns((c.data ?? []) as unknown as Campaign[]);
-      setLeads((l.data ?? []) as typeof leads);
+      setLeadStats((l.data ?? []) as StatsRow[]);
+      setScanStats((s.data ?? []) as ScanRow[]);
     });
     return () => {
       alive = false;
     };
   }, []);
 
-  const stats = useMemo(() => {
-    const map = new Map<string, CampaignStats>();
-    leads.forEach((l) => {
-      if (!l.campaign_id) return;
-      if (!map.has(l.campaign_id)) map.set(l.campaign_id, emptyStats());
-      addToStats(map.get(l.campaign_id)!, l.stage, l.deal_value_eur);
-    });
-    return map;
-  }, [leads]);
+  const stats = useMemo(
+    () =>
+      new Map<string, CampaignStats>(
+        leadStats.map((r) => [r.campaign_id, { total: r.total, open: r.open, won: r.won, wonValue: Number(r.won_value) }]),
+      ),
+    [leadStats],
+  );
+  const scans = useMemo(() => new Map(scanStats.map((r) => [r.campaign_id, r])), [scanStats]);
+  const isOwner = me.role === 'owner';
 
   if (error) return <p className="error">{error}</p>;
   if (!campaigns) return <p className="muted">Cargando campañas…</p>;
@@ -81,7 +108,9 @@ export default function Campaigns({ me }: Props) {
   const inactive = campaigns.filter((c) => !c.active);
   const shown = showInactive ? campaigns : active;
   const totals = emptyStats();
+  let totalScans = 0;
   active.forEach((c) => {
+    totalScans += scans.get(c.id)?.total ?? 0;
     const s = stats.get(c.id);
     if (!s) return;
     totals.total += s.total;
@@ -109,6 +138,12 @@ export default function Campaigns({ me }: Props) {
           <span className="kpi-value">{active.length}</span>
           <span className="kpi-label">Campañas activas</span>
         </div>
+        {isOwner && (
+          <div className="kpi">
+            <span className="kpi-value">{totalScans}</span>
+            <span className="kpi-label">Escaneos / visitas</span>
+          </div>
+        )}
         <div className="kpi">
           <span className="kpi-value">{totals.total}</span>
           <span className="kpi-label">Leads de campañas</span>
@@ -150,6 +185,11 @@ export default function Campaigns({ me }: Props) {
                     {buildingLabel(c) ?? 'Sin edificio'} · <code>{c.code}</code>
                   </div>
                   <div className="campaign-stats">
+                    {isOwner && (
+                      <span>
+                        <strong>{scans.get(c.id)?.total ?? 0}</strong> escaneos
+                      </span>
+                    )}
                     <span>
                       <strong>{s.total}</strong> leads
                     </span>
@@ -159,6 +199,11 @@ export default function Campaigns({ me }: Props) {
                     <span>
                       <strong>{s.won}</strong> ganados
                     </span>
+                    {isOwner && (
+                      <span>
+                        <strong>{conversion(s.total, scans.get(c.id)?.total ?? 0)}</strong> conversión
+                      </span>
+                    )}
                   </div>
                 </a>
               );

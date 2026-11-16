@@ -42,7 +42,7 @@ npm run dev          # opens on http://localhost:5174
 - **Lead page:** contact buttons (email, call, WhatsApp), where it came from (form, campaign, building, utm),
   stage, person in charge, meeting date, value, reason when lost, and notes.
 
-Later: QR scan counts (once the website records them), managing buildings and the team from the app.
+Later: managing buildings and the team from the app, emails, Cal.com bookings.
 
 ## Database
 
@@ -50,6 +50,19 @@ Changes live in `supabase/migrations/`. Each file is applied once, in order.
 
 - `20261116150000_crm_access.sql` — adds `leads.department`, the `lead_notes` table and all the access rules. Applied.
 - `20261116152500_crm_access_tidy.sql` — small speed clean-up of the rules above (same access). Applied.
+- `20261116180000_campaign_stats.sql` — totals per campaign (leads, scans) counted in the database. Applied.
+
+## Website → database (`supabase/functions/website-intake`)
+
+The public website never writes to the tables itself. It calls this Supabase function, which runs with the server key:
+
+- `POST …/functions/v1/website-intake/lead` — checks the form data again (`validate.ts`, same rules as the database),
+  links the campaign (`?c=` code) and the building, ignores the same email + form sent twice within 5 minutes,
+  saves the lead and returns `{ leadId }`. Unknown codes / buildings are kept in the lead's utm so nothing is lost.
+- `POST …/functions/v1/website-intake/scan` — counts one arrival with a campaign code (only the code is sent).
+- Only answers the website's address. **When the website gets its own domain:** Supabase → Edge Functions →
+  Secrets → `ALLOWED_ORIGINS` = `https://ghotics.github.io,https://www.<domain>` (comma-separated).
+- Deploy after a change: Supabase dashboard (Edge Functions → website-intake) or `supabase functions deploy website-intake --no-verify-jwt`.
 
 ## Add someone to the team
 
