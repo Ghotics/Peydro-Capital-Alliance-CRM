@@ -28,8 +28,8 @@ jobs:
       - run: npm run build
         env:
           # Pages serves this repo at https://ghotics.github.io/Peydro-Capital-Alliance-CRM/
-          # Change to "/" when the CRM moves to its own subdomain (crm.<domain>).
-          BASE_PATH: /${{ github.event.repository.name }}/
+          # On its own subdomain (crm.<domain>): set the repo variable BASE_PATH to "/".
+          BASE_PATH: ${{ vars.BASE_PATH || format('/{0}/', github.event.repository.name) }}
           # Public values (same as .env.example). Can be overridden with repo variables.
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://vocranrdldtamdcoulzi.supabase.co' }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_sWT2NL1ft8aDYYfOC19hrg_iyh8F6EE' }}

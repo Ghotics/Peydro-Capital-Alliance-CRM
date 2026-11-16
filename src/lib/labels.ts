@@ -53,6 +53,20 @@ export const FORM_HELP: Record<FormKind, string> = {
   quick: 'Enlaces en anuncios o redes: abre el formulario corto.',
 };
 
+/** Department choices for a lead typed in by hand: which form + area it counts as. */
+export const LEAD_KINDS: { department: string; form: FormKind; area: string | null }[] = [
+  { department: 'giza', form: 'giza', area: null },
+  { department: 'planificacion-financiera', form: 'business_office', area: 'planificacion-financiera' },
+  { department: 'tecnologia', form: 'business_office', area: 'tecnologia' },
+  { department: 'telecomunicaciones', form: 'business_office', area: 'telecomunicaciones' },
+  { department: 'marketing', form: 'business_office', area: 'marketing' },
+  { department: 'consulta', form: 'business_office', area: 'consulta' },
+  { department: 'quick', form: 'quick', area: null },
+];
+
+/** "Abiertos": stages where the lead is still being worked on. */
+export const OPEN_STAGES: Stage[] = ['new', 'contacted', 'qualified', 'meeting_booked', 'proposal_sent'];
+
 export const INTERESTS: Record<string, string> = {
   seguros: 'Seguros',
   ahorro_inversion: 'Ahorro e inversión',
@@ -94,8 +108,14 @@ export function errorMessage(error: { message?: string } | null | undefined): st
   if (/password should be at least/i.test(msg)) return 'La contraseña es demasiado corta.';
   if (/same.*password|different from the old/i.test(msg)) return 'La nueva contraseña debe ser distinta de la anterior.';
   if (/rate limit|too many/i.test(msg)) return 'Demasiados intentos. Espera unos minutos.';
+  if (/Debe quedar al menos/.test(msg)) return 'Debe quedar al menos una persona de dirección activa.';
   if (/campaigns_code_key|duplicate key.*code/i.test(msg)) return 'Ya existe una campaña con ese código. Elige otro.';
-  if (/leads_campaign_id_fkey|violates foreign key/i.test(msg))
-    return 'No se puede borrar: tiene leads. Desactívala en su lugar.';
+  if (/buildings_partner_name_key/i.test(msg)) return 'Ese edificio ya existe para este socio.';
+  if (/leads_campaign_id_fkey/i.test(msg)) return 'No se puede borrar: tiene leads. Desactívala en su lugar.';
+  if (/leads_building_id_fkey|campaigns_building_id_fkey/i.test(msg))
+    return 'No se puede borrar: hay leads o campañas en este edificio.';
+  if (/buildings_partner_id_fkey/i.test(msg)) return 'No se puede borrar: este socio todavía tiene edificios.';
+  if (/already been registered|already registered|email_exists/i.test(msg)) return 'Ya existe una cuenta con ese email.';
+  if (/violates foreign key/i.test(msg)) return 'No se puede borrar: otros datos dependen de esto.';
   return msg ? `Ha ocurrido un error: ${msg}` : 'Ha ocurrido un error.';
 }

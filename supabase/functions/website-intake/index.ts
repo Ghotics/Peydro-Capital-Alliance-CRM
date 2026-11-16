@@ -2,41 +2,21 @@
      POST …/functions/v1/website-intake/lead   a form was sent      -> { leadId }
      POST …/functions/v1/website-intake/scan   someone arrived with ?c=<code> (QR / link) -> 204
    It runs with the server key, so it can write even though the tables are closed to the public.
-   It only answers the website's own address (ALLOWED_ORIGINS). */
+   It only answers the website's own address (ALLOWED_ORIGINS).
+   After saving a lead it sends the notifications (../_shared/notify.ts) in the background. */
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { corsHeaders, isAllowed, originOf, reply, type Headers } from '../_shared/cors.ts';
+import { inBackground } from '../_shared/env.ts';
+import { notifyLead } from '../_shared/notify.ts';
 import { checkLead, checkScan, tooMany } from './validate.ts';
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-/** Website addresses allowed to send. Add the real domain here (Supabase secret ALLOWED_ORIGINS, comma-separated). */
-const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') ?? 'https://ghotics.github.io')
-  .split(',')
-  .map((s) => s.trim().replace(/\/+$/, ''))
-  .filter(Boolean);
-
 const MAX_BODY = 20_000;
 /** The same person sending the same form again within this time gets the same lead back (double clicks, retries). */
 const DUPLICATE_MINUTES = 5;
-
-type Headers = Record<string, string>;
-
-function corsHeaders(origin: string | null): Headers {
-  const headers: Headers = { Vary: 'Origin' };
-  if (origin && ALLOWED.includes(origin)) {
-    headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'content-type';
-    headers['Access-Control-Max-Age'] = '86400';
-  }
-  return headers;
-}
-
-function reply(status: number, data: unknown, headers: Headers): Response {
-  if (data === null) return new Response(null, { status, headers });
-  return new Response(JSON.stringify(data), { status, headers: { ...headers, 'Content-Type': 'application/json' } });
-}
 
 async function saveLead(body: unknown, ip: string, headers: Headers): Promise<Response> {
   if (tooMany(`lead:${ip}`, 10, 10)) return reply(429, { error: 'too_many' }, headers);
@@ -111,6 +91,8 @@ async function saveLead(body: unknown, ip: string, headers: Headers): Promise<Re
     .select('id')
     .single();
   if (error) throw error;
+  /* Emails / WhatsApp after answering, so the visitor never waits for them. */
+  inBackground(notifyLead(db, data.id, { reason: 'new' }));
   return reply(200, { leadId: data.id }, headers);
 }
 
@@ -129,9 +111,9 @@ async function saveScan(body: unknown, ip: string, headers: Headers): Promise<Re
 }
 
 Deno.serve(async (req) => {
-  const origin = req.headers.get('origin')?.replace(/\/+$/, '') ?? null;
+  const origin = originOf(req);
   const headers = corsHeaders(origin);
-  const allowed = origin !== null && ALLOWED.includes(origin);
+  const allowed = isAllowed(origin);
 
   if (req.method === 'OPTIONS') return new Response(null, { status: allowed ? 204 : 403, headers });
   if (req.method !== 'POST') return reply(405, { error: 'method' }, headers);

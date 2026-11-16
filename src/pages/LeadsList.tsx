@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { STAGES, departmentLabel, errorMessage, formatDateTime, normalize, stageLabel } from '../lib/labels';
-import { leadHref } from '../lib/router';
+import { href, leadHref } from '../lib/router';
 import type { LeadRow, Stage, TeamMember } from '../lib/types';
 
 export interface Filters {
@@ -96,16 +96,54 @@ export default function LeadsList({ me, team, filters, setFilters }: Props) {
 
   const hasFilters = JSON.stringify(filters) !== JSON.stringify(emptyFilters);
 
+  /** The leads on screen (with the current filters) as a spreadsheet file. ";" and a BOM so Excel in Spanish opens it. */
+  function exportCsv() {
+    const cell = (v: string | null | undefined) => `"${(v ?? '').replace(/"/g, '""')}"`;
+    const header = ['Recibido', 'Nombre', 'Apellidos', 'Email', 'Teléfono', 'Departamento', 'Campaña', 'Etapa', 'Responsable'];
+    const rows = visible.map((l) =>
+      [
+        formatDateTime(l.created_at),
+        l.first_name,
+        l.last_name,
+        l.email,
+        l.phone,
+        departmentLabel(l.department),
+        l.campaign?.name ?? '',
+        stageLabel(l.stage),
+        l.owner_id ? teamName.get(l.owner_id) ?? '' : 'Sin asignar',
+      ]
+        .map(cell)
+        .join(';'),
+    );
+    const csv = '\ufeff' + [header.map(cell).join(';'), ...rows].join('\r\n');
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    link.download = `leads-pca-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
   if (error) return <p className="error">{error}</p>;
   if (!leads) return <p className="muted">Cargando leads…</p>;
 
   return (
     <section className="stack">
       <div className="page-head">
-        <h1>Leads</h1>
-        <span className="muted">
-          {visible.length} de {leads.length}
-        </span>
+        <div>
+          <h1>Leads</h1>
+          <span className="muted">
+            {visible.length} de {leads.length}
+          </span>
+        </div>
+        <div className="row">
+          <button className="btn small" onClick={exportCsv} disabled={visible.length === 0}>
+            Exportar CSV
+          </button>
+          <a href={href.leadNew} className="btn primary small">
+            + Nuevo lead
+          </a>
+        </div>
       </div>
 
       <div className="stage-chips">

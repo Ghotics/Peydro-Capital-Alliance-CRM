@@ -72,6 +72,24 @@ export interface Campaign {
   building: Building | null;
 }
 
+export interface Partner {
+  id: string;
+  name: string;
+}
+
+/** One line of a lead's history (table lead_events). */
+export interface LeadEvent {
+  id: string;
+  lead_id: string;
+  /** Who did it; null = automatic (website, auto-assignment, Cal.com). */
+  actor_id: string | null;
+  kind: 'created' | 'stage' | 'owner' | 'meeting' | 'booking';
+  from_value: string | null;
+  to_value: string | null;
+  detail: string | null;
+  created_at: string;
+}
+
 export interface Note {
   id: string;
   lead_id: string;
