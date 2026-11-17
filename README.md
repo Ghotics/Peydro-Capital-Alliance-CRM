@@ -71,7 +71,7 @@ Everything below is optional: while a key is missing, that feature simply stays 
 
 | Secret | What for | Example |
 | --- | --- | --- |
-| `ALLOWED_ORIGINS` | Website + CRM addresses allowed to call the functions (comma-separated) | `https://ghotics.github.io,https://www.peydrocapitalalliance.com,https://crm.peydrocapitalalliance.com` |
+| `ALLOWED_ORIGINS` | Website + CRM addresses allowed to call the functions (comma-separated). Optional: without it, the three addresses in the example are used | `https://www.peydrocapitalalliance.com,https://peydrocapitalalliance.com,https://crm.peydrocapitalalliance.com` |
 | `CRM_URL` | CRM address used in email links | `https://crm.peydrocapitalalliance.com/` |
 | `RESEND_API_KEY` | Turns emails on (resend.com → API Keys) | `re_…` |
 | `EMAIL_FROM` | Sender, on a domain verified in Resend | `PCA <avisos@peydrocapitalalliance.com>` |
