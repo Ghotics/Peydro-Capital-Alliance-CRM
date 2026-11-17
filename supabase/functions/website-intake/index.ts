@@ -2,12 +2,14 @@
      POST …/functions/v1/website-intake/lead   a form was sent      -> { leadId }
      POST …/functions/v1/website-intake/scan   someone arrived with ?c=<code> (QR / link) -> 204
    It runs with the server key, so it can write even though the tables are closed to the public.
-   It only answers the website's own address (ALLOWED_ORIGINS).
+   It only answers the website's own address (ALLOWED_ORIGINS), and, once TURNSTILE_SECRET_KEY is set,
+   only forms that passed Cloudflare's "are you human?" check (../_shared/turnstile.ts).
    After saving a lead it sends the notifications (../_shared/notify.ts) in the background. */
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, isAllowed, originOf, reply, type Headers } from '../_shared/cors.ts';
 import { inBackground } from '../_shared/env.ts';
 import { notifyLead } from '../_shared/notify.ts';
+import { checkHuman } from '../_shared/turnstile.ts';
 import { checkLead, checkScan, tooMany } from './validate.ts';
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -24,6 +26,10 @@ async function saveLead(body: unknown, ip: string, headers: Headers): Promise<Re
   const result = checkLead(body);
   if (!result.ok) return reply(400, { error: 'invalid', fields: result.fields }, headers);
   const lead = result.lead;
+
+  /* "Are you human?" (Cloudflare Turnstile). Does nothing until TURNSTILE_SECRET_KEY is set. */
+  const token = (body as { turnstile_token?: unknown }).turnstile_token;
+  if ((await checkHuman(token, ip)) === 'failed') return reply(403, { error: 'human_check' }, headers);
 
   /* Same person + same form (+ department) a moment ago: hand back that lead instead of a copy. */
   let dupQuery = db

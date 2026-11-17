@@ -7,6 +7,7 @@ import { checkLead, checkScan, tooMany } from '../website-intake/validate.ts';
 import { readBooking, verifyCalSignature } from '../_shared/cal.ts';
 import { assignedMail, escapeHtml, visitorMail, whatsappValues, type LeadSummary } from '../_shared/templates.ts';
 import { departmentName, languageOfPage } from '../_shared/labels.ts';
+import { checkHuman } from '../_shared/turnstile.ts';
 
 const form = {
   form: 'business_office', area: 'tecnologia', interests: [], first_name: 'José', last_name: 'Martínez',
@@ -112,4 +113,24 @@ test('visitor email follows the language of the page', () => {
 
 test('WhatsApp template gets 4 values in order', () => {
   assert.deepEqual(whatsappValues(lead, 'L'), ['Tecnología y Automatización', 'Ana <b>López</b>', '+34600000000', 'L']);
+});
+
+test('the human check is off without a secret, and passes or fails with one', async () => {
+  const calls: URLSearchParams[] = [];
+  const cloudflare = (success: boolean) => async (_url: string, init: RequestInit) => {
+    calls.push(init.body as URLSearchParams);
+    return new Response(JSON.stringify({ success }), { status: 200 });
+  };
+  assert.equal(await checkHuman(undefined, '1.2.3.4', undefined, cloudflare(false)), 'off');
+  assert.equal(await checkHuman('good', '1.2.3.4', 'secret', cloudflare(true)), 'passed');
+  assert.equal(calls[0].get('secret'), 'secret');
+  assert.equal(calls[0].get('response'), 'good');
+  assert.equal(calls[0].get('remoteip'), '1.2.3.4');
+  assert.equal(await checkHuman('bad', 'unknown', 'secret', cloudflare(false)), 'failed');
+  assert.equal(calls[1].get('remoteip'), null);
+  assert.equal(await checkHuman('', '1.2.3.4', 'secret', cloudflare(true)), 'failed');
+  assert.equal(await checkHuman(42, '1.2.3.4', 'secret', cloudflare(true)), 'failed');
+  const down = async () => { throw new Error('offline'); };
+  assert.equal(await checkHuman('good', '1.2.3.4', 'secret', down), 'failed');
+  assert.equal(calls.length, 2);
 });
