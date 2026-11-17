@@ -27,7 +27,7 @@ export function crmUrl(): string {
 export function allowedOrigins(): string[] {
   return envList(
     'ALLOWED_ORIGINS',
-    'https://www.peydrocapitalalliance.com,https://peydrocapitalalliance.com,https://crm.peydrocapitalalliance.com,https://ghotics.github.io',
+    'https://www.peydrocapitalalliance.com,https://peydrocapitalalliance.com,https://crm.peydrocapitalalliance.com',
   ).map((o) => o.replace(/\/+$/, ''));
 }
 
