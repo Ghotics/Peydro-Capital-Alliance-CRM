@@ -83,6 +83,7 @@ Everything below is optional: while a key is missing, that feature simply stays 
 | `WHATSAPP_TO` | Number that receives the alerts | `34600000000` |
 | `WHATSAPP_TEMPLATE` | Approved template name, with 4 values: {{1}} department, {{2}} name, {{3}} phone, {{4}} CRM link | `nuevo_lead` |
 | `WHATSAPP_TEMPLATE_LANG` / `WHATSAPP_DEPARTMENTS` | Template language (default `es`) / which departments alert (default `consulta,quick`) | `es` / `consulta,quick` |
+| `TURNSTILE_SECRET_KEY` | Cloudflare → Turnstile → the widget's **secret** key. Add it only **after** the site key is live on the website; from then on forms without a valid check are refused | empty = check off |
 | `CAL_WEBHOOK_SECRET` | Same secret as in Cal.com → Settings → Developer → Webhooks | any long random text |
 
 Who gets what once emails are on: the person in charge of each new lead; the person a lead is reassigned to in the CRM;
