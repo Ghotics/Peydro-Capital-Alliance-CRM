@@ -78,9 +78,9 @@ Everything below is optional: while a key is missing, that feature simply stays 
 | `EMAIL_REPLY_TO` | Where visitors' replies go (optional) | `info@peydrocapitalalliance.com` |
 | `SEND_VISITOR_CONFIRMATION` | `false` = don't email the visitor | `true` (default) |
 | `NOTIFY_EXTRA_EMAILS` | Optional: extra addresses that also get an email for every new lead (owners already do, automatically) | `info@peydrocapitalalliance.com` |
-| `WHATSAPP_TOKEN` | Meta WhatsApp Cloud API access token | `EAAG…` |
+| `WHATSAPP_TOKEN` | Meta WhatsApp Cloud API **permanent** (system user) token. Full setup: [docs/whatsapp-setup.md](docs/whatsapp-setup.md) | `EAAG…` |
 | `WHATSAPP_PHONE_NUMBER_ID` | Id of the WhatsApp Business number that sends | `1234567890` |
-| `WHATSAPP_TO` | Number that receives the alerts | `34600000000` |
+| `WHATSAPP_TO` | Number(s) that receive the alerts, comma-separated | `34600000000,34611111111` |
 | `WHATSAPP_TEMPLATE` | Approved template name, with 4 values: {{1}} department, {{2}} name, {{3}} phone, {{4}} CRM link | `nuevo_lead` |
 | `WHATSAPP_TEMPLATE_LANG` / `WHATSAPP_DEPARTMENTS` | Template language (default `es`) / which departments alert (default `consulta,quick`) | `es` / `consulta,quick` |
 | `TURNSTILE_SECRET_KEY` | Cloudflare → Turnstile → the widget's **secret** key. Add it only **after** the site key is live on the website; from then on forms without a valid check are refused | empty = check off |
