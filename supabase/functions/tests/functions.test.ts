@@ -8,6 +8,7 @@ import { readBooking, verifyCalSignature } from '../_shared/cal.ts';
 import { assignedMail, escapeHtml, ownerMail, visitorMail, whatsappValues, type LeadSummary } from '../_shared/templates.ts';
 import { departmentName, languageOfPage } from '../_shared/labels.ts';
 import { checkHuman } from '../_shared/turnstile.ts';
+import { whatsappRecipients } from '../_shared/whatsapp.ts';
 
 const form = {
   form: 'business_office', area: 'tecnologia', interests: [], first_name: 'José', last_name: 'Martínez',
@@ -142,4 +143,9 @@ test('owners get every lead, saying who it went to', () => {
   const unassigned = ownerMail(lead, 'https://crm/#/lead/1', null);
   assert.ok(unassigned.subject.endsWith('(sin asignar)'));
   assert.ok(!unassigned.html.includes('<script>'));
+});
+
+test('WhatsApp alert numbers are cleaned and can be several', () => {
+  assert.deepEqual(whatsappRecipients(['+34 600 00 00 00', '34611111111', '34600000000', '123']), ['34600000000', '34611111111']);
+  assert.deepEqual(whatsappRecipients([]), []);
 });
