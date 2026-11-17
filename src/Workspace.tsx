@@ -10,6 +10,11 @@ import LeadDetail from './pages/LeadDetail';
 import Campaigns from './pages/Campaigns';
 import CampaignDetail from './pages/CampaignDetail';
 import CampaignNew from './pages/CampaignNew';
+import Pipeline from './pages/Pipeline';
+import LeadNew from './pages/LeadNew';
+import Analytics from './pages/Analytics';
+import Team from './pages/Team';
+import Help from './pages/Help';
 
 interface Props {
   userId: string;
@@ -24,6 +29,10 @@ export default function Workspace({ userId, email }: Props) {
   const [error, setError] = useState<string | null>(null);
   /* Kept here so the filters stay the same when you open a lead and come back. */
   const [filters, setFilters] = useState<Filters>(emptyFilters);
+  /** New leads waiting: all of them for owners, the ones assigned to you for specialists. */
+  const [newCount, setNewCount] = useState(0);
+  /** Bumped after changes to the team, so names and departments reload everywhere. */
+  const [teamVersion, setTeamVersion] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -44,7 +53,24 @@ export default function Workspace({ userId, email }: Props) {
     return () => {
       alive = false;
     };
-  }, [userId]);
+  }, [userId, teamVersion]);
+
+  /* The counter next to "Leads": refreshed every minute and whenever the page changes. */
+  useEffect(() => {
+    if (!me) return;
+    let alive = true;
+    const load = () => {
+      let query = supabase.from('leads').select('id', { count: 'exact', head: true }).eq('stage', 'new');
+      if (me.role !== 'owner') query = query.eq('owner_id', me.id);
+      query.then(({ count }) => alive && setNewCount(count ?? 0));
+    };
+    load();
+    const timer = setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [me, route.name]);
 
   const signOut = () => supabase.auth.signOut();
 
@@ -100,6 +126,11 @@ export default function Workspace({ userId, email }: Props) {
               className={`side-link ${item.routes.includes(route.name) ? 'active' : ''}`}
             >
               {item.label}
+              {item.counter && newCount > 0 && (
+                <span className="nav-count" title="Leads nuevos sin tocar">
+                  {newCount}
+                </span>
+              )}
             </a>
           ))}
         </nav>
@@ -121,6 +152,11 @@ export default function Workspace({ userId, email }: Props) {
         {route.name === 'campaign' && (
           <CampaignDetail key={route.id} id={route.id} me={me} onShowLeads={showCampaignLeads} />
         )}
+        {route.name === 'pipeline' && <Pipeline me={me} team={team} />}
+        {route.name === 'lead-new' && <LeadNew me={me} team={team} />}
+        {route.name === 'analytics' && <Analytics me={me} />}
+        {route.name === 'team' && <Team me={me} team={team} onChanged={() => setTeamVersion((v) => v + 1)} />}
+        {route.name === 'help' && <Help me={me} />}
       </main>
     </div>
   );

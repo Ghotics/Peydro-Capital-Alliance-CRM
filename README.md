@@ -34,15 +34,85 @@ npm run dev          # opens on http://localhost:5174
 ## What's in it
 
 - Login with email + password, "forgot password", and a "create your password" screen for invites.
-- **Side menu** (`src/nav.ts`): add a line there to add a section.
+- **Side menu** (`src/nav.ts`): add a line there to add a section. "Leads" shows how many **new** leads are waiting
+  (all of them for owners, the ones assigned to you for specialists).
 - **Campañas** (landing page): every campaign with its results. Each one has a **QR code** (download PNG / SVG,
-  copy link) that opens the right website form with `?c=<code>`. Owners create, edit, switch off and delete
-  (only without leads) campaigns. The website address the QR codes use is `VITE_WEBSITE_URL`.
-- **Leads:** list with counters per stage, search, and filters by department, campaign and person.
-- **Lead page:** contact buttons (email, call, WhatsApp), where it came from (form, campaign, building, utm),
-  stage, person in charge, meeting date, value, reason when lost, and notes.
+  copy link) that opens the right website form with `?c=<code>`. Owners see scans and conversion.
+- **Pipeline:** one column per stage; drag a card to change its stage. Closed stages show the last 30 days.
+- **Leads:** list with counters per stage, search, filters, **Exportar CSV** (opens in Excel) and **+ Nuevo lead**
+  (for phone calls / visits; the person in charge is picked automatically like website leads).
+- **Lead page:** contact buttons, origin, stage, person in charge, meeting, value, reason, notes and the **Historial**
+  (who changed what, when; "Automático" = website, auto-assignment or Cal.com).
+- **Analítica:** leads per week, per department (with time to first response), and per campaign
+  (scans → leads → won). Specialists see their own departments only.
+- **Equipo** (owners): add people (temporary password or email invitation), change role / departments / active,
+  give a new temporary password; partners and buildings.
+- **Ayuda:** a short guide for the team (`src/pages/Help.tsx`).
 
-Later: managing buildings and the team from the app, emails, Cal.com bookings.
+## Current team (one person per department)
+
+| Department | Person in the CRM |
+| --- | --- |
+| `giza`, `planificacion-financiera` | Irene |
+| `tecnologia` | Tecnología |
+| `telecomunicaciones` | Suministros |
+| `marketing` | Marketing |
+| `consulta`, `quick` | nobody: "Sin asignar", handled by WhatsApp (see `WHATSAPP_*` below) |
+
+**Automatic assignment:** a new lead goes to the active person whose departments include the lead's department
+(Business Office → the area picked in the form; Giza → `giza`; quick form → `quick`). Several people in one
+department → the one with the fewest open leads. Inactive people get nothing. Change departments in **Equipo**.
+
+## Keys and settings (fill these in when you have them)
+
+Everything below is optional: while a key is missing, that feature simply stays off and the rest keeps working.
+
+### Supabase → Edge Functions → Secrets
+
+| Secret | What for | Example |
+| --- | --- | --- |
+| `ALLOWED_ORIGINS` | Website + CRM addresses allowed to call the functions (comma-separated) | `https://ghotics.github.io,https://www.peydrocapitalalliance.com,https://crm.peydrocapitalalliance.com` |
+| `CRM_URL` | CRM address used in email links | `https://crm.peydrocapitalalliance.com/` |
+| `RESEND_API_KEY` | Turns emails on (resend.com → API Keys) | `re_…` |
+| `EMAIL_FROM` | Sender, on a domain verified in Resend | `PCA <avisos@peydrocapitalalliance.com>` |
+| `EMAIL_REPLY_TO` | Where visitors' replies go (optional) | `info@peydrocapitalalliance.com` |
+| `SEND_VISITOR_CONFIRMATION` | `false` = don't email the visitor | `true` (default) |
+| `NOTIFY_UNASSIGNED_EMAILS` | Who gets an email for leads without a person in charge | `peydrosabido@gmail.com` |
+| `WHATSAPP_TOKEN` | Meta WhatsApp Cloud API access token | `EAAG…` |
+| `WHATSAPP_PHONE_NUMBER_ID` | Id of the WhatsApp Business number that sends | `1234567890` |
+| `WHATSAPP_TO` | Number that receives the alerts | `34600000000` |
+| `WHATSAPP_TEMPLATE` | Approved template name, with 4 values: {{1}} department, {{2}} name, {{3}} phone, {{4}} CRM link | `nuevo_lead` |
+| `WHATSAPP_TEMPLATE_LANG` / `WHATSAPP_DEPARTMENTS` | Template language (default `es`) / which departments alert (default `consulta,quick`) | `es` / `consulta,quick` |
+| `CAL_WEBHOOK_SECRET` | Same secret as in Cal.com → Settings → Developer → Webhooks | any long random text |
+
+Who gets what once emails are on: the person in charge of each new lead; the person a lead is reassigned to in the CRM;
+`NOTIFY_UNASSIGNED_EMAILS` for leads nobody is in charge of; the visitor (confirmation, in the page's language).
+**After turning visitor emails on**, set `confirmationEmails = true` in the website repo (`src/data/forms.ts`).
+
+### Supabase dashboard
+
+- **Authentication → Emails → SMTP:** Resend's SMTP (host `smtp.resend.com`, port 465, user `resend`, password = API key,
+  sender on your domain). Needed for "¿Has olvidado la contraseña?" and email invitations.
+- **Authentication → URL Configuration:** Site URL + Redirect URLs = the CRM address.
+- **Authentication → Sign In / Providers → "Allow new users to sign up": OFF.**
+- **Authentication → Passwords → Leaked password protection: ON** (recommended).
+
+### Cal.com (one booking page per specialist)
+
+1. Each specialist's booking link goes in the website repo, `calLink` in `src/data/forms.ts`.
+2. In each Cal.com account: Settings → Developer → Webhooks → New: URL
+   `https://vocranrdldtamdcoulzi.supabase.co/functions/v1/cal-webhook`, events *Booking created / rescheduled / cancelled*,
+   secret = `CAL_WEBHOOK_SECRET`. Bookings then set the lead's meeting date and stage by themselves.
+
+### GitHub → this repo → Settings → Secrets and variables → Actions → Variables
+
+| Variable | When | Value |
+| --- | --- | --- |
+| `VITE_WEBSITE_URL` | website on its own domain | `https://www.peydrocapitalalliance.com` (then download QR codes again) |
+| `BASE_PATH` | CRM on its own subdomain | `/` |
+
+**CRM on its own subdomain** (`crm.peydrocapitalalliance.com`): DNS `CNAME crm → ghotics.github.io`; Settings → Pages →
+Custom domain; variable `BASE_PATH` = `/`; then update `ALLOWED_ORIGINS`, `CRM_URL` and the Supabase URL settings.
 
 ## Database
 
@@ -51,49 +121,37 @@ Changes live in `supabase/migrations/`. Each file is applied once, in order.
 - `20261116150000_crm_access.sql` — adds `leads.department`, the `lead_notes` table and all the access rules. Applied.
 - `20261116152500_crm_access_tidy.sql` — small speed clean-up of the rules above (same access). Applied.
 - `20261116180000_campaign_stats.sql` — totals per campaign (leads, scans) counted in the database. Applied.
-- `20261116190000_auto_assign_leads.sql` — new leads are assigned automatically to the specialist of their department
-  (fewest open leads first when several share it; "Sin asignar" when nobody has it). Applied after review.
+- `20261116190000_auto_assign_leads.sql` — automatic assignment (see above). Applied.
+- `20261117090000_history_analytics_team.sql` — lead history, analytics numbers, "always one active owner",
+  unique building names per partner. Applied after review.
 
-## Website → database (`supabase/functions/website-intake`)
+`supabase/demo/remove_demo_data.sql` removes all fake / test data before launch.
 
-The public website never writes to the tables itself. It calls this Supabase function, which runs with the server key:
+## Server functions (`supabase/functions`)
 
-- `POST …/functions/v1/website-intake/lead` — checks the form data again (`validate.ts`, same rules as the database),
-  links the campaign (`?c=` code) and the building, ignores the same email + form sent twice within 5 minutes,
-  saves the lead and returns `{ leadId }`. Unknown codes / buildings are kept in the lead's utm so nothing is lost.
-- `POST …/functions/v1/website-intake/scan` — counts one arrival with a campaign code (only the code is sent).
-- Only answers the website's address. **When the website gets its own domain:** Supabase → Edge Functions →
-  Secrets → `ALLOWED_ORIGINS` = `https://ghotics.github.io,https://www.<domain>` (comma-separated).
-- Deploy after a change: Supabase dashboard (Edge Functions → website-intake) or `supabase functions deploy website-intake --no-verify-jwt`.
+| Function | Called by | Does |
+| --- | --- | --- |
+| `website-intake` | the website | `/lead` checks + saves a form, then notifies; `/scan` counts a QR arrival |
+| `crm-actions` | the CRM (logged in) | `/notify` email on reassignment; owners: `/team/create`, `/team/password`, `/team/emails` |
+| `cal-webhook` | Cal.com | updates the lead's meeting and stage |
 
-## Add someone to the team
+Shared code is in `_shared/` (emails, WhatsApp, Cal.com, texts). All three run with "Verify JWT" **off**: the website and
+Cal.com don't log in, and `crm-actions` checks the CRM login itself.
+Deploy after a change: `supabase functions deploy <name> --no-verify-jwt` (or the Supabase dashboard).
 
-1. Supabase → **Authentication → Users → Invite user** → their email.
-   They get an email, click it, land on the CRM and choose a password.
-2. Supabase → **Table editor → team_members → Insert row**:
-   - `id`: the user's id (copy it from Authentication → Users)
-   - `name`, `role` (`owner` or `specialist`), `areas` (e.g. `{tecnologia}`)
+## Automatic checks
 
-To remove someone, set `active` to `false` (keeps their notes and history). Inactive people stop getting new leads.
+`.github/workflows/checks.yml` runs on every pull request: the app builds, the function tests
+(`supabase/functions/tests/`) pass, and on a fresh Postgres every migration applies and `supabase/tests/access_test.sql`
+confirms who can see and change what. Run them yourself:
 
-**Automatic assignment:** a new lead goes to the active person whose `areas` include its department.
-Business Office leads use the area picked in the form; Giza leads use `giza`; quick-form leads use `quick`.
-
-## Supabase settings to check (once)
-
-- **Authentication → Sign In / Providers → "Allow new users to sign up": OFF.** Only invited people get in.
-- **Authentication → URL Configuration:**
-  - **Site URL:** the CRM address (now `https://ghotics.github.io/Peydro-Capital-Alliance-CRM/`).
-    Invites sent from the dashboard take people there.
-  - **Redirect URLs:** the same address. (Only add `http://localhost:5174` if you ever run the CRM on your computer.)
+```bash
+node --experimental-strip-types --test 'supabase/functions/tests/*.test.ts'
+psql -f supabase/tests/setup.sql && for f in supabase/migrations/*.sql; do psql -f $f; done && psql -f supabase/tests/access_test.sql
+```
 
 ## Put it online
 
-**Now: GitHub Pages.** `.github/workflows/deploy.yml` builds the app and publishes it on every push to `main`.
-Needed once: repo **Settings → Pages → Source: GitHub Actions**.
-Address: `https://ghotics.github.io/Peydro-Capital-Alliance-CRM/`
-
-**Later: own subdomain** (e.g. `crm.<pca-domain>`): in the workflow set `BASE_PATH: /`, add the domain in
-Settings → Pages → Custom domain, and update the Supabase URLs above.
-
+**Now: GitHub Pages.** `.github/workflows/deploy.yml` builds the app and publishes it on every push to `main`
+(Settings → Pages → Source: GitHub Actions). Address: `https://ghotics.github.io/Peydro-Capital-Alliance-CRM/`.
 Pages use `#/…` addresses, so no redirect rules are needed on any host. The app asks search engines not to index it.

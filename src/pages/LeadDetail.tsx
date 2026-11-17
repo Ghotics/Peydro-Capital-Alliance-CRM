@@ -10,9 +10,11 @@ import {
   euros,
   formatDateTime,
   roleLabel,
+  stageLabel,
 } from '../lib/labels';
 import { go, href } from '../lib/router';
-import type { Lead, Note, Stage, TeamMember } from '../lib/types';
+import type { Lead, LeadEvent, Note, Stage, TeamMember } from '../lib/types';
+import { notifyAssignee } from '../lib/actions';
 
 interface Props {
   id: string;
@@ -61,6 +63,7 @@ export default function LeadDetail({ id, me, team }: Props) {
   const [lead, setLead] = useState<Lead | null | undefined>(undefined);
   const [form, setForm] = useState<Editable | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [events, setEvents] = useState<LeadEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -79,7 +82,8 @@ export default function LeadDetail({ id, me, team }: Props) {
         .eq('id', id)
         .maybeSingle(),
       supabase.from('lead_notes').select('*').eq('lead_id', id).order('created_at', { ascending: false }),
-    ]).then(([leadRes, notesRes]) => {
+      supabase.from('lead_events').select('*').eq('lead_id', id).order('created_at', { ascending: false }),
+    ]).then(([leadRes, notesRes, eventsRes]) => {
       if (!alive) return;
       if (leadRes.error) {
         setError(errorMessage(leadRes.error));
@@ -90,6 +94,8 @@ export default function LeadDetail({ id, me, team }: Props) {
       if (row) setForm(fromLead(row));
       if (notesRes.error) setError(errorMessage(notesRes.error));
       else setNotes((notesRes.data ?? []) as Note[]);
+      /* The history is optional: if it can't load, the page still works. */
+      if (!eventsRes.error) setEvents((eventsRes.data ?? []) as LeadEvent[]);
     });
     return () => {
       alive = false;
@@ -159,9 +165,40 @@ export default function LeadDetail({ id, me, team }: Props) {
       return;
     }
     const updated = data as unknown as Lead;
+    /* Someone new is in charge: tell them by email (if emails are set up). */
+    if (updated.owner_id && updated.owner_id !== lead.owner_id && updated.owner_id !== me.id) {
+      notifyAssignee(updated.id);
+    }
     setLead(updated);
     setForm(fromLead(updated));
     setSaved(true);
+    const { data: fresh } = await supabase
+      .from('lead_events')
+      .select('*')
+      .eq('lead_id', updated.id)
+      .order('created_at', { ascending: false });
+    if (fresh) setEvents(fresh as LeadEvent[]);
+  }
+
+  /** One history line in words. */
+  function eventText(ev: LeadEvent): string {
+    const person = (id: string | null) => (id ? teamName.get(id) ?? 'otra persona' : 'nadie');
+    switch (ev.kind) {
+      case 'created':
+        return ev.detail === 'web'
+          ? `Llegó desde la web${ev.to_value ? ` y se asignó a ${person(ev.to_value)}` : ' (sin asignar)'}`
+          : `Creado en el CRM${ev.to_value ? `, responsable: ${person(ev.to_value)}` : ''}`;
+      case 'stage':
+        return `Etapa: ${ev.from_value ? stageLabel(ev.from_value as Stage) : '—'} → ${stageLabel(ev.to_value as Stage)}`;
+      case 'owner':
+        return `Responsable: ${person(ev.from_value)} → ${person(ev.to_value)}`;
+      case 'meeting':
+        return ev.to_value ? `Reunión: ${formatDateTime(ev.to_value)}` : 'Reunión quitada';
+      case 'booking':
+        return ev.detail ?? 'Cal.com';
+      default:
+        return ev.kind;
+    }
   }
 
   async function onAddNote(e: FormEvent) {
@@ -335,6 +372,22 @@ export default function LeadDetail({ id, me, team }: Props) {
               </ul>
             )}
           </div>
+
+          {events.length > 0 && (
+            <div className="card stack">
+              <h2>Historial</h2>
+              <ul className="timeline">
+                {events.map((ev) => (
+                  <li key={ev.id}>
+                    <span>{eventText(ev)}</span>
+                    <span className="muted small">
+                      {formatDateTime(ev.created_at)} · {ev.actor_id ? teamName.get(ev.actor_id) ?? '—' : 'Automático'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="stack">
