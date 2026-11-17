@@ -25,16 +25,18 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      # Reads the Pages settings: on a custom domain (crm.peydrocapitalalliance.com) base_path is empty,
+      # on ghotics.github.io it is "/Peydro-Capital-Alliance-CRM". So moving domains needs no code change.
+      - id: pages
+        uses: actions/configure-pages@v5
       - run: npm run build
         env:
-          # Pages serves this repo at https://ghotics.github.io/Peydro-Capital-Alliance-CRM/
-          # On its own subdomain (crm.<domain>): set the repo variable BASE_PATH to "/".
-          BASE_PATH: ${{ vars.BASE_PATH || format('/{0}/', github.event.repository.name) }}
+          BASE_PATH: ${{ vars.BASE_PATH || format('{0}/', steps.pages.outputs.base_path) }}
           # Public values (same as .env.example). Can be overridden with repo variables.
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://vocranrdldtamdcoulzi.supabase.co' }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_sWT2NL1ft8aDYYfOC19hrg_iyh8F6EE' }}
           # The public website the QR codes point to. Change when the website gets its own domain.
-          VITE_WEBSITE_URL: ${{ vars.VITE_WEBSITE_URL || 'https://ghotics.github.io/Peydro-Capital-Alliance' }}
+          VITE_WEBSITE_URL: ${{ vars.VITE_WEBSITE_URL || 'https://www.peydrocapitalalliance.com' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
