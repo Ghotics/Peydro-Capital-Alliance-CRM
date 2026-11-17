@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { checkLead, checkScan, tooMany } from '../website-intake/validate.ts';
 import { readBooking, verifyCalSignature } from '../_shared/cal.ts';
-import { assignedMail, escapeHtml, visitorMail, whatsappValues, type LeadSummary } from '../_shared/templates.ts';
+import { assignedMail, escapeHtml, ownerMail, visitorMail, whatsappValues, type LeadSummary } from '../_shared/templates.ts';
 import { departmentName, languageOfPage } from '../_shared/labels.ts';
 import { checkHuman } from '../_shared/turnstile.ts';
 
@@ -133,4 +133,13 @@ test('the human check is off without a secret, and passes or fails with one', as
   const down = async () => { throw new Error('offline'); };
   assert.equal(await checkHuman('good', '1.2.3.4', 'secret', down), 'failed');
   assert.equal(calls.length, 2);
+});
+
+test('owners get every lead, saying who it went to', () => {
+  const assigned = ownerMail(lead, 'https://crm/#/lead/1', 'Irene');
+  assert.ok(assigned.subject.endsWith('(→ Irene)'));
+  assert.ok(assigned.text.includes('asignado a Irene'));
+  const unassigned = ownerMail(lead, 'https://crm/#/lead/1', null);
+  assert.ok(unassigned.subject.endsWith('(sin asignar)'));
+  assert.ok(!unassigned.html.includes('<script>'));
 });

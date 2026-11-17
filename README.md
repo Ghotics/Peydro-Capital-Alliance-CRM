@@ -77,7 +77,7 @@ Everything below is optional: while a key is missing, that feature simply stays 
 | `EMAIL_FROM` | Sender, on a domain verified in Resend | `PCA <avisos@peydrocapitalalliance.com>` |
 | `EMAIL_REPLY_TO` | Where visitors' replies go (optional) | `info@peydrocapitalalliance.com` |
 | `SEND_VISITOR_CONFIRMATION` | `false` = don't email the visitor | `true` (default) |
-| `NOTIFY_UNASSIGNED_EMAILS` | Who gets an email for leads without a person in charge | `peydrosabido@gmail.com` |
+| `NOTIFY_EXTRA_EMAILS` | Optional: extra addresses that also get an email for every new lead (owners already do, automatically) | `info@peydrocapitalalliance.com` |
 | `WHATSAPP_TOKEN` | Meta WhatsApp Cloud API access token | `EAAG…` |
 | `WHATSAPP_PHONE_NUMBER_ID` | Id of the WhatsApp Business number that sends | `1234567890` |
 | `WHATSAPP_TO` | Number that receives the alerts | `34600000000` |
@@ -86,8 +86,9 @@ Everything below is optional: while a key is missing, that feature simply stays 
 | `TURNSTILE_SECRET_KEY` | Cloudflare → Turnstile → the widget's **secret** key. Add it only **after** the site key is live on the website; from then on forms without a valid check are refused | empty = check off |
 | `CAL_WEBHOOK_SECRET` | Same secret as in Cal.com → Settings → Developer → Webhooks | any long random text |
 
-Who gets what once emails are on: the person in charge of each new lead; the person a lead is reassigned to in the CRM;
-`NOTIFY_UNASSIGNED_EMAILS` for leads nobody is in charge of; the visitor (confirmation, in the page's language).
+Who gets what once emails are on, for every new lead from the website: the specialist in charge ("assigned to you");
+**every active owner** (+ `NOTIFY_EXTRA_EMAILS`), saying who it went to or that nobody has it; the visitor (confirmation,
+in the page's language). Reassigning a lead in the CRM emails the new person in charge.
 **After turning visitor emails on**, set `confirmationEmails = true` in the website repo (`src/data/forms.ts`).
 
 ### Supabase dashboard

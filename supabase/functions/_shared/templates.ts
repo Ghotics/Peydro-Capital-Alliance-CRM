@@ -69,13 +69,17 @@ export function assignedMail(lead: LeadSummary, link: string, isNew: boolean): M
   };
 }
 
-/** To the owners' list, for leads nobody is in charge of (Consulta general, quick form). */
-export function unassignedMail(lead: LeadSummary, link: string): Mail {
+/** To the owners (and NOTIFY_EXTRA_EMAILS): every new lead, with who it went to. */
+export function ownerMail(lead: LeadSummary, link: string, assigneeName: string | null): Mail {
   const lines = leadLines(lead);
+  const intro = assigneeName
+    ? `Ha llegado un lead nuevo. Está asignado a ${assigneeName}.`
+    : 'Ha llegado un lead nuevo que no tiene responsable.';
+  const tag = assigneeName ? `→ ${assigneeName}` : 'sin asignar';
   return {
-    subject: `Lead sin asignar: ${lead.first_name} ${lead.last_name} · ${lead.departmentLabel}`,
-    html: wrap(`<p>Ha llegado un lead que no tiene responsable.</p>${lines.html}${button(link, 'Abrir en el CRM')}`),
-    text: `Ha llegado un lead que no tiene responsable.\n\n${lines.text}\n\nAbrir en el CRM: ${link}`,
+    subject: `Nuevo lead: ${lead.first_name} ${lead.last_name} · ${lead.departmentLabel} (${tag})`,
+    html: wrap(`<p>${escapeHtml(intro)}</p>${lines.html}${button(link, 'Abrir en el CRM')}`),
+    text: `${intro}\n\n${lines.text}\n\nAbrir en el CRM: ${link}`,
   };
 }
 
