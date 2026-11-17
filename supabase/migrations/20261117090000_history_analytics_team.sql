@@ -1,4 +1,4 @@
--- NOT APPLIED YET — waiting for review (pull request "CRM next stage").
+-- Applied to the Supabase project on 2026-11-17 (after pull request #2).
 --
 -- 1. Lead history: every lead keeps a log of what happened (created, stage, person in charge, meeting, Cal.com).
 -- 2. Numbers for the Analytics page, counted in the database (and still following the access rules).
@@ -145,4 +145,10 @@ create trigger team_keep_one_owner before update or delete on public.team_member
 -------------------------------------------------------------------------------
 -- 4. One building name per partner
 -------------------------------------------------------------------------------
-alter table public.buildings add constraint buildings_partner_name_key unique (partner_id, name);
+-- (Only if it isn't there yet: the live project already had this exact rule.)
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'buildings_partner_name_key') then
+    alter table public.buildings add constraint buildings_partner_name_key unique (partner_id, name);
+  end if;
+end $$;
