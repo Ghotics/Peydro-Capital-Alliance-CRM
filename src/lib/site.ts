@@ -4,7 +4,7 @@
 import type { Campaign, FormKind } from './types';
 
 export const WEBSITE_URL = (
-  (import.meta.env.VITE_WEBSITE_URL as string | undefined) || 'https://ghotics.github.io/Peydro-Capital-Alliance'
+  (import.meta.env.VITE_WEBSITE_URL as string | undefined) || 'https://www.peydrocapitalalliance.com'
 ).replace(/\/+$/, '');
 
 /** The page of the website each form lives on. */

@@ -19,13 +19,16 @@ export function envList(name: string, fallback = ''): string[] {
 
 /** Where the CRM lives, for links in emails. Ends with "/". */
 export function crmUrl(): string {
-  const url = env('CRM_URL') ?? 'https://ghotics.github.io/Peydro-Capital-Alliance-CRM/';
+  const url = env('CRM_URL') ?? 'https://crm.peydrocapitalalliance.com/';
   return url.endsWith('/') ? url : `${url}/`;
 }
 
 /** Website and CRM addresses allowed to call the functions from a browser (no "/" at the end). */
 export function allowedOrigins(): string[] {
-  return envList('ALLOWED_ORIGINS', 'https://ghotics.github.io').map((o) => o.replace(/\/+$/, ''));
+  return envList(
+    'ALLOWED_ORIGINS',
+    'https://www.peydrocapitalalliance.com,https://peydrocapitalalliance.com,https://crm.peydrocapitalalliance.com,https://ghotics.github.io',
+  ).map((o) => o.replace(/\/+$/, ''));
 }
 
 /** Runs a job after the answer has been sent, so the visitor never waits for emails. */

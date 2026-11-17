@@ -108,11 +108,12 @@ Who gets what once emails are on: the person in charge of each new lead; the per
 
 | Variable | When | Value |
 | --- | --- | --- |
-| `VITE_WEBSITE_URL` | website on its own domain | `https://www.peydrocapitalalliance.com` (then download QR codes again) |
-| `BASE_PATH` | CRM on its own subdomain | `/` |
+| `VITE_WEBSITE_URL` | only to override | default is `https://www.peydrocapitalalliance.com` |
+| `BASE_PATH` | only to override | detected from the Pages settings |
 
-**CRM on its own subdomain** (`crm.peydrocapitalalliance.com`): DNS `CNAME crm → ghotics.github.io`; Settings → Pages →
-Custom domain; variable `BASE_PATH` = `/`; then update `ALLOWED_ORIGINS`, `CRM_URL` and the Supabase URL settings.
+**Addresses (since 2026-11-17):** website `https://www.peydrocapitalalliance.com`, CRM `https://crm.peydrocapitalalliance.com`.
+DNS at Hostinger: `A @` → GitHub's 4 addresses, `CNAME www` and `CNAME crm` → `ghotics.github.io`, plus the Zoho email records.
+The deploy reads the address from the Pages settings, so `BASE_PATH` is only needed to force something unusual.
 
 ## Database
 
@@ -153,5 +154,6 @@ psql -f supabase/tests/setup.sql && for f in supabase/migrations/*.sql; do psql 
 ## Put it online
 
 **Now: GitHub Pages.** `.github/workflows/deploy.yml` builds the app and publishes it on every push to `main`
-(Settings → Pages → Source: GitHub Actions). Address: `https://ghotics.github.io/Peydro-Capital-Alliance-CRM/`.
+(Settings → Pages → Source: GitHub Actions, Custom domain `crm.peydrocapitalalliance.com`).
+Address: `https://crm.peydrocapitalalliance.com/` (the old github.io address forwards there).
 Pages use `#/…` addresses, so no redirect rules are needed on any host. The app asks search engines not to index it.
