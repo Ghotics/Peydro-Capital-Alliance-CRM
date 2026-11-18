@@ -40,7 +40,8 @@ npm run dev          # opens on http://localhost:5174
   its campaigns and their totals (`#/campaigns/business_office`, `#/campaigns/giza`, `#/campaigns/quick`). Each
   campaign has a **QR code** (download PNG / SVG, copy link) that opens the right website form with `?c=<code>`.
   Owners see scans and conversion.
-- **Pipeline:** one column per stage; drag a card to change its stage. Closed stages show the last 30 days.
+- **Pipeline:** one column per stage, in two rows so it never scrolls sideways — open stages on top, closed
+  stages (last 30 days) below; drag a card to change its stage.
 - **Leads:** list with counters per stage, search, filters, **Exportar CSV** (opens in Excel) and **+ Nuevo lead**
   (for phone calls / visits; the person in charge is picked automatically like website leads).
 - **Lead page:** contact buttons, origin, stage, person in charge, meeting, value, reason, notes and the **Historial**

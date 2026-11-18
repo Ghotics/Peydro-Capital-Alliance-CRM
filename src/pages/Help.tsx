@@ -37,8 +37,10 @@ export default function Help({ me }: { me: TeamMember }) {
       <div className="card stack">
         <h2>3. Pipeline</h2>
         <p>
-          En <a href={href.pipeline}>Pipeline</a> ves todos tus leads en columnas por etapa. Arrastra una tarjeta a
-          otra columna para cambiar su etapa. En el móvil, abre el lead y cambia la etapa allí.
+          En <a href={href.pipeline}>Pipeline</a> ves todos tus leads en columnas por etapa: arriba las etapas{' '}
+          <strong>en curso</strong> y debajo las <strong>cerradas</strong> (Ganado, Aún no está listo y Perdido, de los
+          últimos 30 días). Arrastra una tarjeta a otra columna para cambiar su etapa. En el móvil, abre el lead y
+          cambia la etapa allí.
         </p>
       </div>
 

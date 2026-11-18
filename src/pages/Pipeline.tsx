@@ -1,8 +1,9 @@
-/* Pipeline board: one column per stage. Drag a card to another column to change its stage
-   (on a phone, open the lead and change the stage there). Closed columns show the last 30 days. */
+/* Pipeline board: one column per stage, in two rows so it never scrolls sideways:
+   the stages still being worked on on top, the closed ones (last 30 days) below.
+   Drag a card to another column to change its stage (on a phone, open the lead and change it there). */
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
 import { supabase } from '../lib/supabase';
-import { OPEN_STAGES, STAGES, departmentLabel, errorMessage, formatDate } from '../lib/labels';
+import { OPEN_STAGES, STAGES, departmentLabel, errorMessage, formatDate, formatDayMonth } from '../lib/labels';
 import { href } from '../lib/router';
 import type { LeadRow, Stage, TeamMember } from '../lib/types';
 
@@ -14,6 +15,10 @@ interface Props {
 type Card = LeadRow & { updated_at: string };
 
 const CLOSED_DAYS = 30;
+
+/** Top row: Nuevo → Propuesta enviada. Bottom row: Ganado, Aún no está listo, Perdido. */
+const OPEN_COLUMNS = STAGES.filter((s) => OPEN_STAGES.includes(s.value));
+const CLOSED_COLUMNS = STAGES.filter((s) => !OPEN_STAGES.includes(s.value));
 
 export default function Pipeline({ me, team }: Props) {
   const [leads, setLeads] = useState<Card[] | null>(null);
@@ -93,15 +98,83 @@ export default function Pipeline({ me, team }: Props) {
   if (error && !leads) return <p className="error">{error}</p>;
   if (!leads) return <p className="muted">Cargando pipeline…</p>;
 
+  const openCount = visible.filter((l) => OPEN_STAGES.includes(l.stage)).length;
+  const closedCount = visible.length - openCount;
+
+  const column = (s: (typeof STAGES)[number]) => {
+    const cards = visible.filter((l) => l.stage === s.value);
+    return (
+      <div
+        key={s.value}
+        className={`board-col ${over === s.value ? 'drop-over' : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (over !== s.value) setOver(s.value);
+        }}
+        onDragLeave={() => setOver((o) => (o === s.value ? null : o))}
+        onDrop={onDrop(s.value)}
+      >
+        <div className="board-col-head">
+          <span className={`badge stage-${s.value}`} title={s.label}>
+            {s.label}
+          </span>
+          <span className="muted small">{cards.length}</span>
+        </div>
+        <div className="board-cards">
+          {cards.map((l) => {
+            const name = `${l.first_name} ${l.last_name}`;
+            const dep = departmentLabel(l.department);
+            const who = l.owner_id ? teamName.get(l.owner_id) ?? '—' : 'Sin asignar';
+            return (
+              <a
+                key={l.id}
+                href={href.lead(l.id)}
+                className={`board-card ${dragging === l.id ? 'dragging' : ''}`}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', l.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                  setDragging(l.id);
+                }}
+                onDragEnd={() => {
+                  setDragging(null);
+                  setOver(null);
+                }}
+              >
+                <strong className="clip" title={name}>
+                  {name}
+                </strong>
+                <span className="small muted clamp-2" title={dep}>
+                  {dep}
+                </span>
+                {l.campaign && (
+                  <span className="small muted clip" title={l.campaign.name}>
+                    {l.campaign.name}
+                  </span>
+                )}
+                <span className="board-card-foot small">
+                  <span className="clip" title={who}>
+                    {who}
+                  </span>
+                  <span className="muted nowrap" title={formatDate(l.created_at)}>
+                    {formatDayMonth(l.created_at)}
+                  </span>
+                </span>
+              </a>
+            );
+          })}
+          {cards.length === 0 && <div className="board-empty small muted">—</div>}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <section className="stack">
       <div className="page-head">
         <div>
           <h1>Pipeline</h1>
-          <span className="muted">
-            Arrastra una tarjeta a otra columna para cambiar su etapa. Ganados, perdidos y "aún no" muestran los últimos{' '}
-            {CLOSED_DAYS} días.
-          </span>
+          <span className="muted">Arrastra una tarjeta a otra columna para cambiar su etapa.</span>
         </div>
         <a href={href.leadNew} className="btn">
           + Nuevo lead
@@ -141,57 +214,23 @@ export default function Pipeline({ me, team }: Props) {
 
       {error && <p className="error">{error}</p>}
 
-      <div className="board">
-        {STAGES.map((s) => {
-          const cards = visible.filter((l) => l.stage === s.value);
-          return (
-            <div
-              key={s.value}
-              className={`board-col ${over === s.value ? 'drop-over' : ''}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (over !== s.value) setOver(s.value);
-              }}
-              onDragLeave={() => setOver((o) => (o === s.value ? null : o))}
-              onDrop={onDrop(s.value)}
-            >
-              <div className="board-col-head">
-                <span className={`badge stage-${s.value}`}>{s.label}</span>
-                <span className="muted small">{cards.length}</span>
-              </div>
-              <div className="board-cards">
-                {cards.map((l) => (
-                  <a
-                    key={l.id}
-                    href={href.lead(l.id)}
-                    className={`board-card ${dragging === l.id ? 'dragging' : ''}`}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', l.id);
-                      e.dataTransfer.effectAllowed = 'move';
-                      setDragging(l.id);
-                    }}
-                    onDragEnd={() => {
-                      setDragging(null);
-                      setOver(null);
-                    }}
-                  >
-                    <strong>
-                      {l.first_name} {l.last_name}
-                    </strong>
-                    <span className="small muted">{departmentLabel(l.department)}</span>
-                    {l.campaign && <span className="small muted">{l.campaign.name}</span>}
-                    <span className="board-card-foot small">
-                      <span>{l.owner_id ? teamName.get(l.owner_id) ?? '—' : 'Sin asignar'}</span>
-                      <span className="muted">{formatDate(l.created_at)}</span>
-                    </span>
-                  </a>
-                ))}
-                {cards.length === 0 && <div className="board-empty small muted">—</div>}
-              </div>
-            </div>
-          );
-        })}
+      <div className="board-wrap">
+        <div className="board-group">
+          <div className="board-group-head">
+            <h2>En curso</h2>
+            <span className="muted small">{openCount}</span>
+          </div>
+          <div className="board">{OPEN_COLUMNS.map(column)}</div>
+        </div>
+        <div className="board-group">
+          <div className="board-group-head">
+            <h2>Cerrados</h2>
+            <span className="muted small">
+              últimos {CLOSED_DAYS} días · {closedCount}
+            </span>
+          </div>
+          <div className="board closed">{CLOSED_COLUMNS.map(column)}</div>
+        </div>
       </div>
     </section>
   );

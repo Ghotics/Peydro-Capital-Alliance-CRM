@@ -86,6 +86,8 @@ const dateTime = new Intl.DateTimeFormat('es-ES', {
   timeZone: 'Europe/Madrid',
 });
 const dateOnly = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeZone: 'Europe/Madrid' });
+const dayMonth = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' });
+const yearOnly = new Intl.DateTimeFormat('es-ES', { year: 'numeric', timeZone: 'Europe/Madrid' });
 
 export function formatDateTime(iso: string | null): string {
   return iso ? dateTime.format(new Date(iso)) : '—';
@@ -93,6 +95,13 @@ export function formatDateTime(iso: string | null): string {
 
 export function formatDate(iso: string | null): string {
   return iso ? dateOnly.format(new Date(iso)) : '—';
+}
+
+/** "18 nov" for this year, "18 nov 2025" for older dates. For tight spaces like pipeline cards. */
+export function formatDayMonth(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return yearOnly.format(d) === yearOnly.format(new Date()) ? dayMonth.format(d) : dateOnly.format(d);
 }
 
 export const euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
