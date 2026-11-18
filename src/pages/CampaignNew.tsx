@@ -9,13 +9,17 @@ import { buildingLabel } from './Campaigns';
 
 interface Props {
   me: TeamMember;
+  /** Type already picked when coming from a campaigns tab. */
+  initialForm?: FormKind;
 }
 
 const TYPES: FormKind[] = ['business_office', 'quick', 'giza'];
 
-export default function CampaignNew({ me }: Props) {
+export default function CampaignNew({ me, initialForm }: Props) {
   const [name, setName] = useState('');
-  const [form, setForm] = useState<FormKind>('business_office');
+  const [form, setForm] = useState<FormKind>(initialForm ?? 'business_office');
+  /** Back / cancel return to the tab you came from. */
+  const back = initialForm ? href.campaignTab(initialForm) : href.campaigns;
   const [buildingId, setBuildingId] = useState('');
   const [code, setCode] = useState('');
   /** Once the person edits the code by hand, stop filling it in from the name. */
@@ -37,7 +41,7 @@ export default function CampaignNew({ me }: Props) {
       <div className="card narrow stack">
         <h1>Nueva campaña</h1>
         <p className="muted">Solo la dirección puede crear campañas.</p>
-        <a href={href.campaigns} className="btn">
+        <a href={back} className="btn">
           Volver a campañas
         </a>
       </div>
@@ -79,7 +83,7 @@ export default function CampaignNew({ me }: Props) {
 
   return (
     <section className="stack">
-      <a href={href.campaigns} className="back">
+      <a href={back} className="back">
         ← Volver a campañas
       </a>
       <h1>Nueva campaña</h1>
@@ -151,7 +155,7 @@ export default function CampaignNew({ me }: Props) {
           <button className="btn primary" disabled={busy}>
             {busy ? 'Creando…' : 'Crear campaña'}
           </button>
-          <a href={href.campaigns} className="btn ghost">
+          <a href={back} className="btn ghost">
             Cancelar
           </a>
         </div>

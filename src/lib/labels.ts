@@ -46,7 +46,10 @@ export const FORM_SHORT: Record<FormKind, string> = {
   quick: 'Formulario rápido',
 };
 
-/** What each campaign type is for, shown when creating one. */
+/** The tabs of the campaigns page, in this order. */
+export const CAMPAIGN_TABS: FormKind[] = ['business_office', 'giza', 'quick'];
+
+/** What each campaign type is for, shown when creating one and under each campaigns tab. */
 export const FORM_HELP: Record<FormKind, string> = {
   business_office: 'QR en edificios: abre la página de asesoramiento, donde eligen departamento.',
   giza: 'Abre el formulario Giza de la web.',

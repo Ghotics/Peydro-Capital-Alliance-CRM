@@ -147,13 +147,13 @@ export default function CampaignDetail({ id, me, onShowLeads }: Props) {
     if (!window.confirm(`¿Borrar la campaña "${campaign.name}"? Su QR dejará de estar unido a nada.`)) return;
     const { error: err } = await supabase.from('campaigns').delete().eq('id', campaign.id);
     if (err) setError(errorMessage(err));
-    else go(href.campaigns);
+    else go(href.campaignTab(campaign.form));
   }
 
   return (
     <section className="stack">
-      <a href={href.campaigns} className="back">
-        ← Volver a campañas
+      <a href={href.campaignTab(campaign.form)} className="back">
+        ← Volver a campañas de {FORM_SHORT[campaign.form]}
       </a>
 
       <div className="page-head">

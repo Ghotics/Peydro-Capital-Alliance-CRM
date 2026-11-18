@@ -147,8 +147,8 @@ export default function Workspace({ userId, email }: Props) {
       <main className="page">
         {route.name === 'lead' && <LeadDetail key={route.id} id={route.id} me={me} team={team} />}
         {route.name === 'leads' && <LeadsList me={me} team={team} filters={filters} setFilters={setFilters} />}
-        {route.name === 'campaigns' && <Campaigns me={me} />}
-        {route.name === 'campaign-new' && <CampaignNew me={me} />}
+        {route.name === 'campaigns' && <Campaigns me={me} form={route.form} />}
+        {route.name === 'campaign-new' && <CampaignNew key={route.form ?? ''} me={me} initialForm={route.form} />}
         {route.name === 'campaign' && (
           <CampaignDetail key={route.id} id={route.id} me={me} onShowLeads={showCampaignLeads} />
         )}
