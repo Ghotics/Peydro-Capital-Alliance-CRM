@@ -36,8 +36,10 @@ npm run dev          # opens on http://localhost:5174
 - Login with email + password, "forgot password", and a "create your password" screen for invites.
 - **Side menu** (`src/nav.ts`): add a line there to add a section. "Leads" shows how many **new** leads are waiting
   (all of them for owners, the ones assigned to you for specialists).
-- **Campañas** (landing page): every campaign with its results. Each one has a **QR code** (download PNG / SVG,
-  copy link) that opens the right website form with `?c=<code>`. Owners see scans and conversion.
+- **Campañas** (landing page): one tab per form — **Business Office**, **Giza**, **Formulario rápido** — each with
+  its campaigns and their totals (`#/campaigns/business_office`, `#/campaigns/giza`, `#/campaigns/quick`). Each
+  campaign has a **QR code** (download PNG / SVG, copy link) that opens the right website form with `?c=<code>`.
+  Owners see scans and conversion.
 - **Pipeline:** one column per stage; drag a card to change its stage. Closed stages show the last 30 days.
 - **Leads:** list with counters per stage, search, filters, **Exportar CSV** (opens in Excel) and **+ Nuevo lead**
   (for phone calls / visits; the person in charge is picked automatically like website leads).

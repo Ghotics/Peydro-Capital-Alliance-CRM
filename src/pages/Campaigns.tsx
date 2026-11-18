@@ -1,12 +1,15 @@
-/* Landing page: every campaign (QR code or link) with how many leads it brought in. */
+/* Landing page: the campaigns (QR codes or links) with how many leads they brought in,
+   one tab per type: Business Office, Giza, Formulario rápido. */
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { FORM_SHORT, errorMessage, euros } from '../lib/labels';
+import { CAMPAIGN_TABS, FORM_HELP, FORM_SHORT, errorMessage, euros } from '../lib/labels';
 import { href } from '../lib/router';
-import type { Campaign, Stage, TeamMember } from '../lib/types';
+import type { Campaign, FormKind, Stage, TeamMember } from '../lib/types';
 
 interface Props {
   me: TeamMember;
+  /** The open tab, from the address. Left out = the first type that has active campaigns. */
+  form?: FormKind;
 }
 
 export const CAMPAIGN_SELECT =
@@ -61,7 +64,7 @@ export function buildingLabel(c: Pick<Campaign, 'building'>): string | null {
   return [c.building.partner?.name, `Edificio ${c.building.name}`].filter(Boolean).join(' · ');
 }
 
-export default function Campaigns({ me }: Props) {
+export default function Campaigns({ me, form }: Props) {
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [leadStats, setLeadStats] = useState<StatsRow[]>([]);
   const [scanStats, setScanStats] = useState<ScanRow[]>([]);
@@ -104,9 +107,13 @@ export default function Campaigns({ me }: Props) {
   if (error) return <p className="error">{error}</p>;
   if (!campaigns) return <p className="muted">Cargando campañas…</p>;
 
-  const active = campaigns.filter((c) => c.active);
-  const inactive = campaigns.filter((c) => !c.active);
-  const shown = showInactive ? campaigns : active;
+  const activeOf = (f: FormKind) => campaigns.filter((c) => c.form === f && c.active).length;
+  /* No tab in the address (e.g. from the menu): open the first type that has active campaigns. */
+  const tab: FormKind = form ?? CAMPAIGN_TABS.find((f) => activeOf(f) > 0) ?? CAMPAIGN_TABS[0];
+  const inTab = campaigns.filter((c) => c.form === tab);
+  const active = inTab.filter((c) => c.active);
+  const inactive = inTab.filter((c) => !c.active);
+  const shown = showInactive ? inTab : active;
   const totals = emptyStats();
   let totalScans = 0;
   active.forEach((c) => {
@@ -126,12 +133,30 @@ export default function Campaigns({ me }: Props) {
           <h1>Campañas</h1>
           <span className="muted">Cada campaña tiene su QR o enlace. Los leads que llegan por él quedan unidos a ella.</span>
         </div>
-        {me.role === 'owner' && (
-          <a href={href.campaignNew} className="btn primary">
+        {isOwner && (
+          <a href={href.campaignNewOf(tab)} className="btn primary">
             + Nueva campaña
           </a>
         )}
       </div>
+
+      <div className="tabs" role="tablist" aria-label="Tipo de campaña">
+        {CAMPAIGN_TABS.map((f) => (
+          <a
+            key={f}
+            href={href.campaignTab(f)}
+            role="tab"
+            aria-selected={f === tab}
+            className={`tab ${f === tab ? 'active' : ''}`}
+          >
+            {FORM_SHORT[f]}
+            <span className="tab-count" title="Campañas activas">
+              {activeOf(f)}
+            </span>
+          </a>
+        ))}
+      </div>
+      <p className="muted small tab-help">{FORM_HELP[tab]}</p>
 
       <div className="kpis">
         <div className="kpi">
@@ -158,12 +183,12 @@ export default function Campaigns({ me }: Props) {
         </div>
       </div>
 
-      {campaigns.length === 0 ? (
+      {inTab.length === 0 ? (
         <div className="card empty stack">
-          <p>Todavía no hay campañas.</p>
-          {me.role === 'owner' && (
+          <p>Todavía no hay campañas de {FORM_SHORT[tab]}.</p>
+          {isOwner && (
             <div>
-              <a href={href.campaignNew} className="btn primary">
+              <a href={href.campaignNewOf(tab)} className="btn primary">
                 Crear la primera
               </a>
             </div>
@@ -171,44 +196,53 @@ export default function Campaigns({ me }: Props) {
         </div>
       ) : (
         <>
-          <div className="campaign-grid">
-            {shown.map((c) => {
-              const s = stats.get(c.id) ?? emptyStats();
-              return (
-                <a key={c.id} href={href.campaign(c.id)} className={`card campaign-card ${c.active ? '' : 'inactive'}`}>
-                  <div className="campaign-card-head">
-                    <span className={`type-tag type-${c.form}`}>{FORM_SHORT[c.form]}</span>
-                    {!c.active && <span className="type-tag off">Desactivada</span>}
-                  </div>
-                  <h2>{c.name}</h2>
-                  <div className="muted small">
-                    {buildingLabel(c) ?? 'Sin edificio'} · <code>{c.code}</code>
-                  </div>
-                  <div className="campaign-stats">
-                    {isOwner && (
-                      <span>
-                        <strong>{scans.get(c.id)?.total ?? 0}</strong> escaneos
-                      </span>
+          {shown.length === 0 ? (
+            <div className="card empty">
+              <p>No hay campañas activas de {FORM_SHORT[tab]}.</p>
+            </div>
+          ) : (
+            <div className="campaign-grid">
+              {shown.map((c) => {
+                const s = stats.get(c.id) ?? emptyStats();
+                const place = buildingLabel(c) ?? (c.form === 'business_office' ? 'Sin edificio' : null);
+                return (
+                  <a key={c.id} href={href.campaign(c.id)} className={`card campaign-card ${c.active ? '' : 'inactive'}`}>
+                    {!c.active && (
+                      <div className="campaign-card-head">
+                        <span className="type-tag off">Desactivada</span>
+                      </div>
                     )}
-                    <span>
-                      <strong>{s.total}</strong> leads
-                    </span>
-                    <span>
-                      <strong>{s.open}</strong> en curso
-                    </span>
-                    <span>
-                      <strong>{s.won}</strong> ganados
-                    </span>
-                    {isOwner && (
+                    <h2>{c.name}</h2>
+                    <div className="muted small">
+                      {place && <>{place} · </>}
+                      <code>{c.code}</code>
+                    </div>
+                    <div className="campaign-stats">
+                      {isOwner && (
+                        <span>
+                          <strong>{scans.get(c.id)?.total ?? 0}</strong> escaneos
+                        </span>
+                      )}
                       <span>
-                        <strong>{conversion(s.total, scans.get(c.id)?.total ?? 0)}</strong> conversión
+                        <strong>{s.total}</strong> leads
                       </span>
-                    )}
-                  </div>
-                </a>
-              );
-            })}
-          </div>
+                      <span>
+                        <strong>{s.open}</strong> en curso
+                      </span>
+                      <span>
+                        <strong>{s.won}</strong> ganados
+                      </span>
+                      {isOwner && (
+                        <span>
+                          <strong>{conversion(s.total, scans.get(c.id)?.total ?? 0)}</strong> conversión
+                        </span>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
           {inactive.length > 0 && (
             <button className="link-btn small" onClick={() => setShowInactive(!showInactive)}>
               {showInactive ? 'Ocultar desactivadas' : `Mostrar desactivadas (${inactive.length})`}

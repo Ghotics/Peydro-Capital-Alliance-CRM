@@ -57,6 +57,12 @@ export default function Help({ me }: { me: TeamMember }) {
           <a href={href.campaigns}>Campañas</a> y <a href={href.analytics}>Analítica</a> se ve cuántos escaneos, leads y
           ventas trae cada una.
         </p>
+        <p>
+          En Campañas hay una pestaña por tipo de formulario: <a href={href.campaignTab('business_office')}>Business
+          Office</a>, <a href={href.campaignTab('giza')}>Giza</a> y{' '}
+          <a href={href.campaignTab('quick')}>Formulario rápido</a>. Cada pestaña muestra solo sus campañas y sus
+          números.
+        </p>
       </div>
 
       <div className="card stack">
