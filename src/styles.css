@@ -213,10 +213,17 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .small-kpis .kpi-value { font-size: 1.25rem; }
 
 /* Campaigns */
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+/* The grey line under the tabs is a shadow, not a border, so the tabs never stick out of the row
+   (that used to make the row 1px too tall and show a tiny scrollbar). On a narrow phone the tabs
+   can still be swiped sideways, without drawing a scrollbar. */
+.tabs {
+  display: flex; gap: 4px; box-shadow: inset 0 -1px var(--line);
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 14px; margin-bottom: -1px;
+  display: inline-flex; align-items: center; gap: 8px; flex: none;
+  padding: 10px 14px;
   border-bottom: 2px solid transparent;
   color: var(--muted); text-decoration: none; font-weight: 500; white-space: nowrap;
 }
