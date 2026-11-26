@@ -1,5 +1,5 @@
-/* The texts of every email. Plain functions (no network), so they can be tested on their own.
-   Team emails are in Spanish (the CRM is Spanish only); the visitor gets Spanish or English like the page they used. */
+/* The texts of every email and team alert (WhatsApp, Telegram). Plain functions (no network), so they can be tested on their own.
+   Team texts are in Spanish (the CRM is Spanish only); the visitor gets Spanish or English like the page they used. */
 
 export interface LeadSummary {
   first_name: string;
@@ -110,4 +110,31 @@ export function visitorMail(firstName: string, departmentLabel: string, lang: 'e
 /** WhatsApp template values, in order: {{1}} department, {{2}} name, {{3}} phone, {{4}} CRM link. */
 export function whatsappValues(lead: LeadSummary, link: string): string[] {
   return [lead.departmentLabel, `${lead.first_name} ${lead.last_name}`, lead.phone, link];
+}
+
+export interface TelegramMessage {
+  /** Telegram "HTML" text: only <b> is used, everything the visitor typed is escaped. */
+  html: string;
+  /** Where the "Abrir en el CRM" button goes. */
+  link: string;
+}
+
+/** Team group alert for a new lead. Kept short on purpose: name, department, phone, campaign, who has it.
+    Email and message stay in the CRM, behind the button. */
+export function telegramMessage(
+  lead: LeadSummary,
+  formLabel: string,
+  assigneeName: string | null,
+  link: string,
+): TelegramMessage {
+  const lines = [
+    `🆕 <b>Nuevo lead · ${escapeHtml(formLabel)}</b>`,
+    escapeHtml(lead.departmentLabel),
+    '',
+    `👤 <b>${escapeHtml(`${lead.first_name} ${lead.last_name}`)}</b>`,
+    `📞 ${escapeHtml(lead.phone)}`,
+  ];
+  if (lead.campaignName) lines.push(`📍 ${escapeHtml(lead.campaignName)}`);
+  lines.push(assigneeName ? `➡️ Responsable: ${escapeHtml(assigneeName)}` : '⚠️ Sin responsable');
+  return { html: lines.join('\n'), link };
 }

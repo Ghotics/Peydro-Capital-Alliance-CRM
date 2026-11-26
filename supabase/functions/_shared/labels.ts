@@ -15,6 +15,18 @@ export function departmentName(dep: string | null, lang: 'es' | 'en' = 'es'): st
   return DEPARTMENTS[dep]?.[lang] ?? dep;
 }
 
+/** Form names, the same as the CRM's campaign tabs. */
+export const FORM_NAMES: Record<string, string> = {
+  business_office: 'Business Office',
+  giza: 'Giza',
+  quick: 'Formulario rápido',
+};
+
+export function formName(form: string | null): string {
+  if (!form) return 'Formulario';
+  return FORM_NAMES[form] ?? form;
+}
+
 /** The website's English pages live under /en/ (after the base path). */
 export function languageOfPage(page: string | null): 'es' | 'en' {
   return page && /(^|\/)en(\/|$)/.test(page) ? 'en' : 'es';
