@@ -4,14 +4,17 @@
          · EVERY active owner, plus NOTIFY_EXTRA_EMAILS -> email for every lead, saying who it went to
            (an owner who is also the one in charge gets only the "assigned to you" email);
          · no one in charge (Consulta general, quick form) -> also WhatsApp;
+         · the team's Telegram group -> a short alert for every lead from the forms in TELEGRAM_FORMS
+           (default: Business Office);
          · the visitor -> confirmation email (unless SEND_VISITOR_CONFIRMATION=false).
      - Lead reassigned in the CRM -> email to the new person in charge only.
    Every channel is skipped while its keys are missing. Nothing here can make saving a lead fail. */
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { sendEmail, type SendResult } from './email.ts';
 import { crmUrl, env, envList } from './env.ts';
-import { departmentName, languageOfPage } from './labels.ts';
-import { assignedMail, ownerMail, visitorMail, whatsappValues, type LeadSummary } from './templates.ts';
+import { departmentName, formName, languageOfPage } from './labels.ts';
+import { sendTelegram, telegramForms } from './telegram.ts';
+import { assignedMail, ownerMail, telegramMessage, visitorMail, whatsappValues, type LeadSummary } from './templates.ts';
 import { sendWhatsApp } from './whatsapp.ts';
 
 interface Options {
@@ -25,15 +28,22 @@ export interface NotifyResult {
   assignee: SendResult;
   owners: SendResult;
   whatsapp: SendResult;
+  telegram: SendResult;
   visitor: SendResult;
 }
 
 export async function notifyLead(db: SupabaseClient, leadId: string, options: Options): Promise<NotifyResult> {
-  const result: NotifyResult = { assignee: 'skipped', owners: 'skipped', whatsapp: 'skipped', visitor: 'skipped' };
+  const result: NotifyResult = {
+    assignee: 'skipped',
+    owners: 'skipped',
+    whatsapp: 'skipped',
+    telegram: 'skipped',
+    visitor: 'skipped',
+  };
 
   const { data: lead, error } = await db
     .from('leads')
-    .select('id, first_name, last_name, email, phone, message, department, page, owner_id, campaign:campaigns(name)')
+    .select('id, form, first_name, last_name, email, phone, message, department, page, owner_id, campaign:campaigns(name)')
     .eq('id', leadId)
     .maybeSingle();
   if (error || !lead) {
@@ -75,6 +85,11 @@ export async function notifyLead(db: SupabaseClient, leadId: string, options: Op
 
     if (!lead.owner_id && envList('WHATSAPP_DEPARTMENTS', 'consulta,quick').includes(lead.department ?? '')) {
       result.whatsapp = await sendWhatsApp(whatsappValues(summary, link));
+    }
+
+    /* The team's Telegram group: every new lead from the chosen forms, assigned or not. */
+    if (telegramForms().includes(lead.form ?? '')) {
+      result.telegram = await sendTelegram(telegramMessage(summary, formName(lead.form), assigneeName, link));
     }
   }
 

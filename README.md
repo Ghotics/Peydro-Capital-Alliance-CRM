@@ -86,12 +86,16 @@ Everything below is optional: while a key is missing, that feature simply stays 
 | `WHATSAPP_TO` | Number(s) that receive the alerts, comma-separated | `34600000000,34611111111` |
 | `WHATSAPP_TEMPLATE` | Approved template name, with 4 values: {{1}} department, {{2}} name, {{3}} phone, {{4}} CRM link | `nuevo_lead` |
 | `WHATSAPP_TEMPLATE_LANG` / `WHATSAPP_DEPARTMENTS` | Template language (default `es`) / which departments alert (default `consulta,quick`) | `es` / `consulta,quick` |
+| `TELEGRAM_BOT_TOKEN` | Turns on the team's Telegram group alert (token from @BotFather). Full setup: [docs/telegram-setup.md](docs/telegram-setup.md) | `123456789:AAH…` |
+| `TELEGRAM_CHAT_ID` | The group's ID (negative number, minus sign included) | `-1001234567890` |
+| `TELEGRAM_FORMS` | Which forms post to the group (default `business_office`) | `business_office,giza,quick` |
 | `TURNSTILE_SECRET_KEY` | Cloudflare → Turnstile → the widget's **secret** key. Add it only **after** the site key is live on the website; from then on forms without a valid check are refused | empty = check off |
 | `CAL_WEBHOOK_SECRET` | Same secret as in Cal.com → Settings → Developer → Webhooks | any long random text |
 
 Who gets what once emails are on, for every new lead from the website: the specialist in charge ("assigned to you");
 **every active owner** (+ `NOTIFY_EXTRA_EMAILS`), saying who it went to or that nobody has it; the visitor (confirmation,
-in the page's language). Reassigning a lead in the CRM emails the new person in charge.
+in the page's language). Once Telegram is on, the team's group also gets a short alert for every Business Office lead
+(`TELEGRAM_FORMS`). Reassigning a lead in the CRM emails the new person in charge.
 **After turning visitor emails on**, set `confirmationEmails = true` in the website repo (`src/data/forms.ts`).
 
 ### Supabase dashboard
@@ -141,7 +145,7 @@ Changes live in `supabase/migrations/`. Each file is applied once, in order.
 | `crm-actions` | the CRM (logged in) | `/notify` email on reassignment; owners: `/team/create`, `/team/password`, `/team/emails` |
 | `cal-webhook` | Cal.com | updates the lead's meeting and stage |
 
-Shared code is in `_shared/` (emails, WhatsApp, Cal.com, texts). All three run with "Verify JWT" **off**: the website and
+Shared code is in `_shared/` (emails, WhatsApp, Telegram, Cal.com, texts). All three run with "Verify JWT" **off**: the website and
 Cal.com don't log in, and `crm-actions` checks the CRM login itself.
 Deploy after a change: `supabase functions deploy <name> --no-verify-jwt` (or the Supabase dashboard).
 

@@ -5,8 +5,11 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { checkLead, checkScan, tooMany } from '../website-intake/validate.ts';
 import { readBooking, verifyCalSignature } from '../_shared/cal.ts';
-import { assignedMail, escapeHtml, ownerMail, visitorMail, whatsappValues, type LeadSummary } from '../_shared/templates.ts';
-import { departmentName, languageOfPage } from '../_shared/labels.ts';
+import {
+  assignedMail, escapeHtml, ownerMail, telegramMessage, visitorMail, whatsappValues, type LeadSummary,
+} from '../_shared/templates.ts';
+import { departmentName, formName, languageOfPage } from '../_shared/labels.ts';
+import { sendTelegram, telegramForms } from '../_shared/telegram.ts';
 import { checkHuman } from '../_shared/turnstile.ts';
 import { whatsappRecipients } from '../_shared/whatsapp.ts';
 
@@ -148,4 +151,61 @@ test('owners get every lead, saying who it went to', () => {
 test('WhatsApp alert numbers are cleaned and can be several', () => {
   assert.deepEqual(whatsappRecipients(['+34 600 00 00 00', '34611111111', '34600000000', '123']), ['34600000000', '34611111111']);
   assert.deepEqual(whatsappRecipients([]), []);
+});
+
+test('Telegram alert: short, escaped, says who has the lead', () => {
+  const assigned = telegramMessage(lead, formName('business_office'), 'Irene', 'https://crm/#/lead/1');
+  assert.ok(assigned.html.startsWith('🆕 <b>Nuevo lead · Business Office</b>'));
+  assert.ok(assigned.html.includes('Tecnología y Automatización'));
+  assert.ok(assigned.html.includes('Ana &lt;b&gt;López&lt;/b&gt;'));
+  assert.ok(assigned.html.includes('+34600000000'));
+  assert.ok(assigned.html.includes('Renta 92 · 14'));
+  assert.ok(assigned.html.includes('Responsable: Irene'));
+  assert.ok(!assigned.html.includes('ana@example.com'), 'email stays in the CRM');
+  assert.ok(!assigned.html.includes('script'), 'message stays in the CRM');
+  assert.equal(assigned.link, 'https://crm/#/lead/1');
+  const unassigned = telegramMessage({ ...lead, campaignName: null }, formName('quick'), null, 'L');
+  assert.ok(unassigned.html.includes('Formulario rápido'));
+  assert.ok(unassigned.html.includes('Sin responsable'));
+  assert.ok(!unassigned.html.includes('📍'));
+  assert.equal(formName('nuevo'), 'nuevo');
+});
+
+test('Telegram: Business Office only by default, more forms when listed', () => {
+  assert.deepEqual(telegramForms(), ['business_office']);
+  assert.deepEqual(telegramForms(['business_office', 'Giza', 'quick']), ['business_office', 'giza', 'quick']);
+});
+
+test('Telegram: off without keys, sends to the group with a CRM button, never fails loudly', async () => {
+  const message = telegramMessage(lead, 'Business Office', null, 'https://crm/#/lead/1');
+  const calls: { url: string; body: Record<string, unknown> }[] = [];
+  const telegram = (status: number) => async (url: string, init: RequestInit) => {
+    calls.push({ url, body: JSON.parse(String(init.body)) });
+    return new Response(JSON.stringify({ ok: status === 200 }), { status });
+  };
+
+  assert.equal(await sendTelegram(message, {}, telegram(200)), 'skipped');
+  assert.equal(await sendTelegram(message, { token: '123:abc' }, telegram(200)), 'skipped');
+  assert.equal(calls.length, 0);
+
+  assert.equal(await sendTelegram(message, { token: '123:abc', chatId: '-100987' }, telegram(200)), 'sent');
+  assert.equal(calls[0].url, 'https://api.telegram.org/bot123:abc/sendMessage');
+  assert.equal(calls[0].body.chat_id, '-100987');
+  assert.equal(calls[0].body.parse_mode, 'HTML');
+  assert.equal(calls[0].body.text, message.html);
+  assert.deepEqual(calls[0].body.reply_markup, {
+    inline_keyboard: [[{ text: 'Abrir en el CRM', url: 'https://crm/#/lead/1' }]],
+  });
+
+  const logged: unknown[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => { logged.push(...args); };
+  try {
+    assert.equal(await sendTelegram(message, { token: '123:abc', chatId: '-100987' }, telegram(400)), 'failed');
+    const down = async (url: string) => { throw new TypeError(`error sending request for url (${url})`); };
+    assert.equal(await sendTelegram(message, { token: '123:abc', chatId: '-100987' }, down), 'failed');
+  } finally {
+    console.error = original;
+  }
+  assert.ok(!logged.join(' ').includes('123:abc'), 'the token never reaches the logs');
 });
